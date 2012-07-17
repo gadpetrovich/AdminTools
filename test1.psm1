@@ -337,7 +337,7 @@ function recursive_disk_usage([string]$Path, [int]$Depth, [int]$Level, [switch]$
 		}
 		if ( $i.PSIsContainer ) {
 			$objs = recursive_disk_usage -Path $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
-			if ($objs.GetType().Name -eq "PSCustomObject") {
+			if ($objs -is "PSCustomObject") {
 				$size += $objs.Length
 				if ( $Level -lt $Depth ) { $list.Add($objs) }
 			} else {
@@ -499,7 +499,7 @@ function Update-DirLength
 	begin{}
 	process {
 		foreach($file in $InputObject) {      
-			if ($file.GetType().Name -eq "DirectoryInfo") {
+			if ($file -is [System.IO.DirectoryInfo]) {
 				$dir_usage = Get-DiskUsage $file.FullName -Depth 0
 				$file | Add-Member -MemberType NoteProperty -Name Length -Value ($dir_usage.Length)
 			}
@@ -523,6 +523,49 @@ function Update-Length
 		foreach($i in $InputObject) {      
 			$i | Add-Member -MemberType NoteProperty -Name Length -Value ("{0:N3} MB" -f ($i.Length / 1MB)) -force
 			$i
+		}
+	}
+	end{}
+}
+
+function Join-Object
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[PSObject]$InputObject,
+		[PSObject]$JoinObject,
+		[ScriptBlock]$Where,
+		[String[]]$InputProperty = "*",
+		[String[]]$JoinProperty = "*"
+	)
+	
+	begin{}
+	process {
+		
+		foreach($i in $InputObject) {
+			foreach($j in $JoinObject) {
+				if ( ($Where.Invoke($i, $j)) -eq "True")
+				{
+					$out = New-Object -TypeName PSobject             
+					
+					# извлекаем свойства из первого списка
+					$props = @(); 
+					$i | Get-Member -MemberType *Property -Name $InputProperty | % { $props += $_.Name }
+					foreach($ip in $props) {
+						$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
+					}
+					
+					# извлекаем свойства из второго списка
+					$props = @(); 
+					$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
+					foreach($jp in $props) {
+						$out | Add-Member -MemberType NoteProperty -Name $jp -Value $j.$jp
+					}
+					
+					$out
+				}
+			}
 		}
 	}
 	end{}
