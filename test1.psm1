@@ -50,9 +50,48 @@ function Get-Program([string]$ComputerName = ".", [string]$ProgMatch="")
     return Get-WmiObject -Class Win32_Product -ComputerName $ComputerName | where { $_.Name -imatch $ProgMatch }
 }
 
-# http://techibee.com/powershell/powershell-script-to-query-softwares-installed-on-remote-computer/1389
-# http://gallery.technet.microsoft.com/scriptcenter/519e1d3a-6318-4e3d-b507-692e962c6666
-# http://gallery.technet.microsoft.com/scriptcenter/Get-All-Installed-Software-73a07eba
+
+
+
+
+<# 
+ .Synopsis
+  Возварщает список установленных программ.
+
+ .Description
+  Функция возвращает список всех программ, установленных на указанном компьютере.
+ 
+  
+ .Parameter ComputerName
+  Компьютер, для которого требуется получить список программ, по умолчанию локальный. Может использоваться для перадачи объектов по конвейеру.
+
+ .Outputs
+  Возвращаемые поля:
+  AppName
+  AppVersion
+  AppVendor
+  InstalledDate
+  UninstallKey
+  AppGUID
+  
+ .Example
+   # Отобразить все программы на локальном компьютере.
+   Get-InstalledSoftware
+
+ .Example
+   # Список программ на компьютере "comp01", название которых начинается с символа "p".
+   Get-InstalledSoftware -ComputerName comp01 | ? { $_.AppName -match "^p" }
+  
+ .Link
+   http://techibee.com/powershell/powershell-script-to-query-softwares-installed-on-remote-computer/1389
+   
+ .Link
+   http://gallery.technet.microsoft.com/scriptcenter/519e1d3a-6318-4e3d-b507-692e962c6666
+   
+ .Link
+   http://gallery.technet.microsoft.com/scriptcenter/Get-All-Installed-Software-73a07eba
+ 
+#>
 function Get-InstalledSoftware
 {
 	[cmdletbinding()]            
@@ -439,54 +478,24 @@ function Get-DiskUsage(
 	
 }
 
-# пример использования:
-# ls 'c:\program files\' | add_dirlength
 <# 
  .Synopsis
   Возращает список вложенных каталогов с их суммарными размерами.
 
  .Description
-  Выполняет полное сканирование указанного каталога. 
+  Выполняет полное сканирование указанного каталога, Размер каталога записывается в поле Length. Изменения вносятся непосредственно в исходный список.
  
-  
- .Parameter Path
-  Каталог, размер которого требуется подсчитать.
-
- .Parameter Depth
-  Глубина вложенности каталогов. Требуется для ограничения отображаемых данных (на процесс сканирования никак не влияет).
- 
- .Parameter ShowLevel
-  Добавляет столбец Level, в нем указан уровень вложенности каталога.
-  
- .Parameter ShowProgress
-  Отображает прогресс сканирования каталогов.
-  
- .Parameter RecursiveAlgorithm
-  Использовать рекурсивный алгоритм для сканирования папок (в данном случае в вывод данные отдаются только по окончанию выполнения фукнции).
-
- .Example
-   # Размеры текущей и вложенных папок.
-   Get-DiskUsage
-
- .Example
-   # Размер текущей папки.
-   Get-DiskUsage . -Depth 0
- 
- .Example 
-   # Отобразить информацию о ходе выполнения сканирования.
-   Get-DiskUsage . -ShowProgress
+ .Parameter InputObject
+   Список файлов и директорий. Может использоваться для передачи объектов по конвейеру.
    
  .Example
-   # Вывести размеры каталогов в удобном виде.
-   Get-DiskUsage | Update-Length
- 
- .Example 
-   # Выполнить сканирование рекурсивно.
-   Get-DiskUsage 'C:\Program Files' -RecursiveAlgorithm
+   PS C:\> ls | ? { $_.PSIsContainer } | Update-DirLength
+
+   Описание
+   -----------
+   Размеры папок в текущей директории.
    
- .Example
-	# Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
-   Get-DiskUsage 'C:\Program Files' -ShowProgress -ShowLevel | ? {$_.Level -eq 1} | sort Length -Descending | select FullName, Length -First 10 | Update-Length | ft -AutoSize
+
 #>
 function Update-DirLength
 {
@@ -509,25 +518,99 @@ function Update-DirLength
 	end{}
 }
 
+<# 
+ .Synopsis
+  Преобразует параметр Length в читаемый вид.
+
+ .Description
+  В результате выполнения данной функции в поле Length будет записана строка в формате "{0:N3} MB". Т.е. число будет преобразовано в более читаемый вид. Изменения вносятся непосредственно в исходный список.
+ 
+ .Parameter InputObject
+   Список файлов и директорий. Может использоваться для передачи объектов по конвейеру.
+ 
+ .Parameter NumericParameter
+   Считываемый параметр. Значение по умолчанию "Length".
+ 
+ .Parameter NewParameter
+   Добавляемый параметр. Содержит преобразованное значение из NumericParameter. По умолчанию то же имя, что и у NumericParameter.
+
+ .Example
+   PS C:\> ls | Update-Length
+
+   Описание
+   -----------
+   Размеры файлов в текущей директории.
+   
+ .Example
+   PS C:\> ls -force | ? { !$_.psiscontainer  } | Update-Length -NewParameter HLength | sort length -descending | select name , hlength
+   
+   Описание
+   -----------
+   Выводит имена и размеры файлов в отсортированном виде. Добавляется новый параметр HLength с результатами работы функции Update-Length.
+   
+#>
 function Update-Length
 {
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
-		[string]$Parameter = "Length"
+		[string]$NumericParameter = "Length",
+		[string]$NewParameter = $NumericParameter
 	)  
 	
 	begin{}
 	process {
 		foreach($i in $InputObject) {      
-			$i | Add-Member -MemberType NoteProperty -Name Length -Value ("{0:N3} MB" -f ($i.Length / 1MB)) -force
+			$i | Add-Member -MemberType NoteProperty -Name $NewParameter -Value ("{0:N3} MB" -f ($i.$NumericParameter / 1MB)) -force
 			$i
 		}
 	}
 	end{}
 }
 
+
+<# 
+ .Synopsis
+  Объединяет два списка в один.
+
+ .Description
+  Результат выполнения Join-Object представляет собой декартово произведение двух списков, представленных параметрами InputObject и JoinObject. Если какие-либо имена полей у InputObject и JoinObject совпадают, то к имени поля из списка JoinObject добавляется строка "Join". Например при объединении списков, содеражих одинаковые поля (Id, Name), получаем результирующий список в полями: Id, Name, JoinId, JoinName.
+    
+ .Parameter InputObject
+  Первый список для объединения. Может использоваться для перадачи объектов по конвейеру.
+
+ .Parameter JoinObject
+  Второй список для объединения. К именам полей, совпадающим с полями из InputObject, будет добавляться префикс "Join".
+ 
+ .Parameter FilterScript
+  Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param() ( { param($i,$j); ... }). Переменная $i содержит объект из InputObject, $j - из JoinObject.
+  
+ .Parameter InputProperty
+  Список полей из InputObject для добавления в результирующий список.
+  
+ .Parameter JoinProperty
+  Список полей из JoinObject для добавления в результирующий список. К именам полей, совпадающим с полями из InputObject, будет добавляться префикс "Join".
+
+ .Example
+   PS C:\> $a = get-childitem c:\dir1
+   PS C:\> $b = get-childitem c:\dir2
+   PS C:\> Join-Object $a $b { param($i,$j); $i.name -eq $j.name } name, LastWriteTime LastWriteTime
+
+   Описание
+   -----------
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. 
+   
+ .Example
+   PS C:\> $a = get-childitem c:\dir1
+   PS C:\> $b = get-childitem c:\dir2
+   PS C:\> $a | Join-Object -JoinObject $b -where { param($i,$j); $i.name -eq $j.name } -InputProperty name, LastWriteTime -JoinProperty LastWriteTime
+
+   Описание
+   -----------
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра через InputObject через конвейер.
+   
+#>
 function Join-Object
 {
 	[cmdletbinding()]            
@@ -535,7 +618,7 @@ function Join-Object
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSObject]$InputObject,
 		[PSObject]$JoinObject,
-		[ScriptBlock]$Where,
+		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
 		[String[]]$InputProperty = "*",
 		[String[]]$JoinProperty = "*"
 	)
@@ -545,26 +628,29 @@ function Join-Object
 		
 		foreach($i in $InputObject) {
 			foreach($j in $JoinObject) {
-				if ( ($Where.Invoke($i, $j)) -eq "True")
-				{
-					$out = New-Object -TypeName PSobject             
+				if ( !($FilterScript.Invoke($i, $j))) {continue}
+				
+				$out = New-Object -TypeName PSobject             
 					
-					# извлекаем свойства из первого списка
-					$props = @(); 
-					$i | Get-Member -MemberType *Property -Name $InputProperty | % { $props += $_.Name }
-					foreach($ip in $props) {
-						$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
-					}
-					
-					# извлекаем свойства из второго списка
-					$props = @(); 
-					$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
-					foreach($jp in $props) {
-						$out | Add-Member -MemberType NoteProperty -Name $jp -Value $j.$jp
-					}
-					
-					$out
+				# извлекаем свойства из первого списка
+				$iprops = @(); 
+				$i | Get-Member -MemberType *Property -Name $InputProperty | % { $iprops += $_.Name }
+				foreach($ip in $iprops) {
+					$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
 				}
+				
+				# извлекаем свойства из второго списка
+				$props = @(); 
+				$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
+				foreach($jp in $props) {
+					$jp_name = $jp
+					if (($out | Get-Member -Name $jp) -ne $null) {
+						$jp_name = "Join" + $jp
+					}
+					$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.$jp
+				}
+				
+				$out
 			}
 		}
 	}
