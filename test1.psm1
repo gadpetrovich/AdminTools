@@ -183,14 +183,36 @@ function Uninstall-Program
 	}
 }
 
-function Install-Program([string]$ComputerName = $env:computername, [string]$ProgSource, [string]$InstallParams = "")
+function Install-Program() 
 {
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = $env:computername, 
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[string]$ProgSource, 
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[string]$InstallParams = "", 
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[switch]$UseOnlyInstallParams
+	)
+	
 	$file = Get-Item $ProgSource
 	if( $file.Extension -ine ".msi")
 	{
-		psexec -si \\$ComputerName $ProgSource /S /silent /quiet /norestart /q /qn $InstallParams
+		if(!$UseOnlyInstallParams) {
+			$params = "/S /silent /quiet /norestart /q /qn"
+		} else {
+			$params = ""
+		}
+		psexec -s \\$ComputerName $ProgSource $params $InstallParams
 	} else {
-		psexec -s \\$ComputerName msiexec /i $ProgSource /quiet /norestart /qn $InstallParams
+		if(!$UseOnlyInstallParams) {
+			$params = "/quiet /norestart /qn"
+		} else {
+			$params = ""
+		}
+		psexec -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams
 	}
 }
 
@@ -281,7 +303,7 @@ function Find-DomainObject([string]$Match)
 # аналог юникосовой программы du
 # ниже расположен рекурсивный аналог данной функции
 # здесь же пришлось развернуть рекурсию для вывода данных прямо во время сканирования папки
-function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue, [switch]$ShowLevel, [switch]$ShowProgress)
+function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, [switch]$ShowLevel, [switch]$ShowProgress)
 {
 	#список директорий
 	$dirs = New-Object System.Collections.Generic.List[System.Object];
@@ -290,7 +312,7 @@ function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue,
 	#список размеров папок
 	$sizes = New-Object System.Collections.Generic.List[System.Object];
 	
-	$dir = @(Get-ChildItem -LiteralPath $Path -Force)
+	$dir = @(Get-ChildItem -LiteralPath $LiteralPath -Force)
 	
 	$dirs.add($dir)
 	$indexes.add(0)
@@ -308,9 +330,10 @@ function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue,
 			$size = $sizes[$level]
 			if ($level -eq 0) { 
 				# выходим
-				#"Размер папки $Path = $size"
-				$obj = New-Object -TypeName PSobject             
-				$obj | Add-Member -MemberType NoteProperty -Name FullName -Value (get-item -LiteralPath $Path -force).FullName
+				#"Размер папки $LiteralPath = $size"
+				#$obj = New-Object -TypeName PSobject             
+				#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value (get-item -LiteralPath $LiteralPath -force).FullName
+				$obj = Get-Item -Force -LiteralPath $LiteralPath
 				$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
 				if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value $level }
 				return $obj 
@@ -325,8 +348,9 @@ function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue,
 			
 			#"вышли из папки " + $dirs[$level][ $indexes[$level] ].FullName + " размер = " + $size
 			if($level -lt $Depth) {
-				$obj = New-Object -TypeName PSobject             
-				$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $dirs[$level][ $indexes[$level] ].FullName
+				#$obj = New-Object -TypeName PSobject             
+				#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $dirs[$level][ $indexes[$level] ].FullName
+				$obj = Get-Item -Force -LiteralPath $dirs[$level][ $indexes[$level] ].FullName
 				$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
 				if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value ($level+1) }
 				$obj 
@@ -361,11 +385,12 @@ function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue,
 	}
 }
 
-function recursive_disk_usage([string]$Path, [int]$Depth, [int]$Level, [switch]$ShowLevel, [switch]$ShowProgress)
+function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [switch]$ShowLevel, [switch]$ShowProgress)
 {
 	$size = 0
-	$list = New-Object System.Collections.Generic.List[System.Object];
-	$dir = Get-ChildItem -LiteralPath $Path -Force
+	#$list = New-Object System.Collections.Generic.List[System.Object];
+	$list = @()
+	$dir = Get-ChildItem -LiteralPath $LiteralPath -Force
 	$j = 0
 	foreach ($i in $dir)
 	{	
@@ -373,29 +398,26 @@ function recursive_disk_usage([string]$Path, [int]$Depth, [int]$Level, [switch]$
 			Write-Progress -Id $Level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($size / 1MB))) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
 		}
 		if ( $i.PSIsContainer ) {
-			$objs = recursive_disk_usage -Path $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
-			if ($objs -is "PSCustomObject") {
-				$size += $objs.Length
-				if ( $Level -lt $Depth ) { $list.Add($objs) }
-			} else {
-				$size += $objs[$objs.Count-1].Length
-				if ( $Level -lt $Depth ) { $list.AddRange($objs) }
-			}
+			$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
+			
+			$size += $objs[-1].Length
+			if ( $Level -lt $Depth ) { $list += $objs }
 			
 		} else {	
 			$size += $i.Length
 		}
 		$j++
-		
 	}
 	if ($ShowProgress -and ($Level -lt 4)) {
 		Write-Progress -Id $Level -activity "Вычисление размера" -status "Сканирование"  -Complete
 	}
-	$obj = New-Object -TypeName PSobject             
-	$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $Path
+	#$obj = New-Object -TypeName PSobject             
+	#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $LiteralPath
+	$obj = Get-Item -Force -LiteralPath $LiteralPath
 	$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
+	
 	if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value $Level }
-	$list.add($obj)
+	$list += $obj
 
 	#$obj.Length.ToString() + "`t" + $obj.FullName | write-host 
 	return $list
@@ -404,13 +426,13 @@ function recursive_disk_usage([string]$Path, [int]$Depth, [int]$Level, [switch]$
 # $ShowProgress - отображать ход сканирования (до 4 уровней)
 # 
 function Get-DiskUsageRecursive(
-	[string]$Path = ".", 
+	[string]$LiteralPath = ".", 
 	[int]$Depth = [int]::MaxValue, 
 	[switch]$ShowLevel, 
 	[switch]$ShowProgress
 )
 {
-	recursive_disk_usage -Path $Path -Depth $Depth -_Level 0 -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+	recursive_disk_usage -LiteralPath $LiteralPath -Depth $Depth -_Level 0 -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
 }
 
 <# 
@@ -421,7 +443,7 @@ function Get-DiskUsageRecursive(
   Выполняет полное сканирование указанного каталога. 
  
   
- .Parameter Path
+ .Parameter LiteralPath
   Каталог, размер которого требуется подсчитать.
 
  .Parameter Depth
@@ -438,30 +460,30 @@ function Get-DiskUsageRecursive(
 
  .Example
    # Размеры текущей и вложенных папок.
-   Get-DiskUsage
+   Get-DiskUsage | select FullName, Length
 
  .Example
    # Размер текущей папки.
-   Get-DiskUsage . -Depth 0
+   Get-DiskUsage . -Depth 0 | select FullName, Length
  
  .Example 
    # Отобразить информацию о ходе выполнения сканирования.
-   Get-DiskUsage . -ShowProgress
+   Get-DiskUsage . -ShowProgress | select FullName, Length
    
  .Example
    # Вывести размеры каталогов в удобном виде.
-   Get-DiskUsage | Update-Length
+   Get-DiskUsage | Update-Length  | select FullName, Length
  
  .Example 
    # Выполнить сканирование рекурсивно.
-   Get-DiskUsage 'C:\Program Files' -RecursiveAlgorithm
+   Get-DiskUsage 'C:\Program Files' -RecursiveAlgorithm | ft -AutoSize FullName, Length
    
  .Example
 	# Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
    Get-DiskUsage 'C:\Program Files' -ShowProgress -ShowLevel | ? {$_.Level -eq 1} | sort Length -Descending | select FullName, Length -First 10 | Update-Length | ft -AutoSize
 #>
 function Get-DiskUsage(
-	[string]$Path = ".", 
+	[string]$LiteralPath = ".", 
 	[int]$Depth = [int]::MaxValue, 
 	[switch]$ShowLevel, 
 	[switch]$ShowProgress,
@@ -469,9 +491,9 @@ function Get-DiskUsage(
 )
 {
 	if($RecursiveAlgorithm) {
-		Get-DiskUsageRecursive -Path $Path -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+		Get-DiskUsageRecursive -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
 	} else {
-		Get-DiskUsageLinear -Path $Path -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+		Get-DiskUsageLinear -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
 	}
 	
 }
@@ -607,7 +629,7 @@ function Update-Length
 
    Описание
    -----------
-   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра через InputObject через конвейер.
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра InputObject через конвейер.
    
  .Example
    PS C:\> $b = 1..9
