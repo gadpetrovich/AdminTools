@@ -313,9 +313,7 @@ function Get-DiskUsageLinear([string]$Path = ".", [int]$Depth = [int]::MaxValue,
 				$obj | Add-Member -MemberType NoteProperty -Name FullName -Value (get-item -LiteralPath $Path -force).FullName
 				$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
 				if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value $level }
-				$obj 
-				
-				return 
+				return $obj 
 			}
 			
 			$sizes[$level-1] += $size
@@ -576,6 +574,7 @@ function Update-Length
 
  .Description
   Результат выполнения Join-Object представляет собой декартово произведение двух списков, представленных параметрами InputObject и JoinObject. Если какие-либо имена полей у InputObject и JoinObject совпадают, то к имени поля из списка JoinObject добавляется строка "Join". Например при объединении списков, содеражих одинаковые поля (Id, Name), получаем результирующий список в полями: Id, Name, JoinId, JoinName.
+  В случае, когда элементы списков не наследуются от класса PSObject, параметры InputProperty и JoinProperty неиспользуются, и имена полей результирующего списка выбираются, как "Value" и "JoinValue".
     
  .Parameter InputObject
   Первый список для объединения. Может использоваться для перадачи объектов по конвейеру.
@@ -610,14 +609,22 @@ function Update-Length
    -----------
    Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра через InputObject через конвейер.
    
+ .Example
+   PS C:\> $b = 1..9
+   PS C:\> $b = 1..9
+   PS C:\> Join-Object $a $b { param($i, $j); $i+$j -eq 16 }
+   
+   Описание
+   -----------
+   На экран будут выведены значения массиов $a и $b, сумма которых равна 16-и.
 #>
 function Join-Object
 {
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[PSObject]$InputObject,
-		[PSObject]$JoinObject,
+		$InputObject,
+		$JoinObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
 		[String[]]$InputProperty = "*",
 		[String[]]$JoinProperty = "*"
@@ -633,23 +640,29 @@ function Join-Object
 				$out = New-Object -TypeName PSobject             
 					
 				# извлекаем свойства из первого списка
-				$iprops = @(); 
-				$i | Get-Member -MemberType *Property -Name $InputProperty | % { $iprops += $_.Name }
-				foreach($ip in $iprops) {
-					$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
-				}
-				
-				# извлекаем свойства из второго списка
-				$props = @(); 
-				$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
-				foreach($jp in $props) {
-					$jp_name = $jp
-					if (($out | Get-Member -Name $jp) -ne $null) {
-						$jp_name = "Join" + $jp
+				if( $i -is [PSObject] ){
+					$props = @(); 
+					$i | Get-Member -MemberType *Property -Name $InputProperty | % { $props += $_.Name }
+					foreach($ip in $props) {
+						$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
 					}
-					$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.$jp
+				} else {
+					$out | Add-Member -MemberType NoteProperty -Name Value -Value $i
 				}
-				
+				# извлекаем свойства из второго списка
+				if( $j -is [PSObject] ){
+					$props = @(); 
+					$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
+					foreach($jp in $props) {
+						$jp_name = $jp
+						if (($out | Get-Member -Name $jp) -ne $null) {
+							$jp_name = "Join" + $jp
+						}
+						$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.$jp
+					}
+				} else {
+					$out | Add-Member -MemberType NoteProperty -Name JoinValue -Value $j
+				}
 				$out
 			}
 		}
