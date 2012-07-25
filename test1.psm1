@@ -157,14 +157,15 @@ function Uninstall-Program
 	)          
 	
 	try {
-		if($AppGUID[0] -eq "{")
+		$uninstall_key = (Get-InstalledSoftware $ComputerName | ? { $_.AppGUID -eq $AppGUID }).UninstallKey
+		if( $uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
 		{    
 			## psexe необходим для работы с сетевыми дисками
 			#psexec \\$ComputerName msiexec /x $AppGUID /qn
 			$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create("msiexec `/x$AppGUID `/qn")
 		} else {
 			# сложный случай - не msi-пакет
-			$uninstall_key = (Get-InstalledSoftware $ComputerName | ? { $_.AppGUID -eq $AppGUID }).UninstallKey
+			
 			$returnval = ([WMICLASS]"\\$ComputerName\ROOT\CIMV2:win32_process").Create(
 				"$uninstall_key /S /x /silent /uninstall /qn /quiet")
 		}
@@ -205,7 +206,7 @@ function Install-Program()
 		} else {
 			$params = ""
 		}
-		psexec -s \\$ComputerName $ProgSource $params $InstallParams
+		psexec -is \\$ComputerName $ProgSource $params $InstallParams
 	} else {
 		if(!$UseOnlyInstallParams) {
 			$params = "/quiet /norestart /qn"
@@ -256,8 +257,15 @@ function check_user_into_admin_group([string]$UserName, [ADSI]$group)
 
 # http://social.technet.microsoft.com/Forums/ru-RU/scrlangru/thread/c44049a6-7c8b-462e-9bb9-61ce1e16f4ab/
 # добавляем пользователя в группу локальных администраторов
-function Add-UserToAdmin([string]$ComputerName = ".", [string]$UserName)
+function Add-UserToAdmin
 {
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = ".", 
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[string]$UserName
+	)
 
     $col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
     # local admin group
@@ -276,8 +284,16 @@ function Add-UserToAdmin([string]$ComputerName = ".", [string]$UserName)
 }
 
 # удаляем пользователя из группы локальных администраторов
-function Remove-UserFromAdmin([string]$ComputerName = ".", [string]$UserName)
+function Remove-UserFromAdmin
 {
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = ".", 
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[string]$UserName
+	)
+	
     $col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
     # local admin group
     $admgrp_name = $col_groups.Name
@@ -295,9 +311,17 @@ function Remove-UserFromAdmin([string]$ComputerName = ".", [string]$UserName)
     
 }
 
-function Find-DomainObject([string]$Match)
+function Get-NetObject([string]$Match)
 {
-    net view | ? { $_ -imatch $Match } 
+    $objs = net view 
+	$o2 = $objs | select -skip 3 -first ($objs.length-5) | ? { $_ -imatch $Match } # убрали лишние строки 
+	foreach($i in $o2) {
+		$s = $i -split "\s+", 2
+		$obj = New-Object -TypeName PSObject
+		$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")
+		$obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1]
+		$obj
+	}
 }
 
 # аналог юникосовой программы du
@@ -638,7 +662,17 @@ function Update-Length
    
    Описание
    -----------
-   На экран будут выведены значения массиов $a и $b, сумма которых равна 16-и.
+   На экран будут выведены значения массивов $a и $b, сумма которых равна 16-и.
+ 
+ .Example
+   PS C:\> $comp1 = Get-InstalledSoftware comp1
+   PS C:\> $comp2 = Get-InstalledSoftware comp2
+   PS C:\> Join-Object $comp1 $comp2 { param($i, $j); $i.AppName -eq $j.AppName } AppName, InstalledDate InstalledDate
+ 
+   Описание
+   -----------
+   Вывод дат установки одноименных программ на разных компьютерах.
+ 
 #>
 function Join-Object
 {
