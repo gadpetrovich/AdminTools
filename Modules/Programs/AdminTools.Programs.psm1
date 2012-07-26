@@ -1,56 +1,3 @@
-
-
-<# 
- .Synopsis
-  Возварщает список установленных программ.
-
- .Description
-  Функция возвращает список программ, установленных с помощью msi.
- 
-  
- .Parameter ComputerName
-  Компьютер, для которого требуется получить список программ, по умолчанию локальный.
-
- .Parameter ProgMatch
-  Регулярное выражения для поиска определнной программы.
-
- .Outputs
-  System.Management.ManagementObject#root\cimv2\Win32_Product. 
-  Некоторые из возвращаемых полей:
-  IdentifyingNumber
-  Vendor
-  Version
-  Caption
- 
- .Example
-   # Отобразить все программы на локальном компьютере.
-   Get-Program
-
- .Example
-   # Список программ на компьютере "comp01", название которых начинается с символа "p".
-   Get-Program -ComputerName comp01 -ProgMatch "^p"
-  
- .Link
-   http://blog.wadmin.ru/2011/09/powershell-lessons-manage-computer/
-   
- .Link
-   http://technet.microsoft.com/ru-ru/scriptcenter/dd742419.aspx
-   
- .Link
-   http://technet.microsoft.com/en-US/scriptcenter/ee861518.aspx
- 
- .Link
-   http://blogs.msdn.com/b/powershell/
-#>
-function Get-Program([string]$ComputerName = ".", [string]$ProgMatch="")
-{
-    return Get-WmiObject -Class Win32_Product -ComputerName $ComputerName | where { $_.Name -imatch $ProgMatch }
-}
-
-
-
-
-
 <# 
  .Synopsis
   Возварщает список установленных программ.
@@ -75,19 +22,26 @@ function Get-Program([string]$ComputerName = ".", [string]$ProgMatch="")
   AppGUID
   
  .Example
-   PS C:\> Get-InstalledSoftware
+   PS C:\> Get-Program
 
    Описание
    -----------
-   Отобразить все программы на локальном компьютере.
+   Отобразит все программы на локальном компьютере.
    
  .Example
-   PS C:\> Get-InstalledSoftware -ComputerName comp01 -AppName "^p" 
+   PS C:\> Get-Program comp01 ^p
 
    Описание
    -----------
    Список программ на компьютере "comp01", название которых начинается с символа "p".
+  
+ .Example
+   PS C:\> Get-Program comp01 "prog1", "prog2"
    
+   Описание
+   -----------
+   Отобразит список программ на компьютере "comp01", названия которых совпадают с "prog1" и "prog2".
+  
  .Link
    http://techibee.com/powershell/powershell-script-to-query-softwares-installed-on-remote-computer/1389
    
@@ -98,14 +52,18 @@ function Get-Program([string]$ComputerName = ".", [string]$ProgMatch="")
    http://gallery.technet.microsoft.com/scriptcenter/Get-All-Installed-Software-73a07eba
  
 #>
-function Get-InstalledSoftware
+function Get-Program
 {
-	[cmdletbinding()]            
+	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[string]$AppName = ""
+		
+		[parameter(position=1,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
+		[string[]]$AppName,
+		
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
+		[string]$AppMatch = ""
 	)            
 
 	begin {            
@@ -125,7 +83,9 @@ function Get-InstalledSoftware
 					$AppDetails   = $HKLM.OpenSubKey($AppRegistryKey)            
 					
 					$AppDisplayName  = $($AppDetails.GetValue("DisplayName"))    
-					if($AppDisplayName -notmatch $AppName ) { continue; }
+					if($PSCmdlet.ParameterSetName -eq "Match" -and $AppDisplayName -notmatch $AppMatch ) { continue; }
+					if($PSCmdlet.ParameterSetName -eq "Name" -and $AppName -notcontains $AppDisplayName ) { continue; }
+					
 					$AppVersion   = $($AppDetails.GetValue("DisplayVersion"))            
 					$AppPublisher  = $($AppDetails.GetValue("Publisher"))            
 					$AppInstalledDate = $($AppDetails.GetValue("InstallDate"))            
@@ -154,7 +114,7 @@ function Get-InstalledSoftware
   Удаляет указанную программу.
 
  .Description
-  Удаляет программу, указанную в параметре AppGUID. Деинсталляция производится с тихом режиме, для этого используются ключи "/S /x /silent /uninstall /qn /quiet" для нестандартных установщиков и "/qn" для msi-пакетов.
+  Удаляет программу, указанную в параметре AppGUID. Деинсталляция производится с тихом режиме, для этого используются ключи "/S /x /silent /uninstall /qn /quiet /norestart" для нестандартных установщиков и "/qn" для msi-пакетов.
  
   
  .Parameter ComputerName
@@ -178,14 +138,14 @@ function Get-InstalledSoftware
   Удалить программу можно также с помощью Get-Program: (Get-Program kf-map09 7-zip).Uninstall()
   
  .Example
-   PS C:\> Get-InstalledSoftware -AppName testprogram | Uninstall-Program 
+   PS C:\> Get-Program -AppName testprogram | Uninstall-Program 
 
    Описание
    -----------
    Эта команда удаляет программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Get-InstalledSoftware -AppName appname | Uninstall-Program -Confirm
+   PS C:\> cat computers.txt | Get-Program -AppName appname | Uninstall-Program -Confirm
 
    Описание
    -----------
@@ -196,7 +156,7 @@ function Get-InstalledSoftware
    >> comp1, prog1
    >> comp2, prog2 " | echo >remove_apps.csv
    >>
-   PS C:\> Import-Csv remove_apps.csv | Get-InstalledSoftware | Uninstall-Program
+   PS C:\> Import-Csv remove_apps.csv | Get-Program | Uninstall-Program
 
    Описание
    -----------
@@ -213,9 +173,9 @@ function Uninstall-Program
 {
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
 		[switch]$Force
 	)          
@@ -224,20 +184,18 @@ function Uninstall-Program
 	process {
 		try {
 			$returnvalue = -1
-			$app = Get-InstalledSoftware $ComputerName | ? { $_.AppGUID -eq $AppGUID }
+			$app = Get-Program $ComputerName | ? { $_.AppGUID -eq $AppGUID }
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
 					$uninstall_key = $app.UninstallKey
 					if( $uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
 					{    
-						## psexe необходим для работы с сетевыми дисками
-						#psexec \\$ComputerName msiexec /x $AppGUID /qn
 						$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create("msiexec `/x$AppGUID `/qn")
 					} else {
 						# сложный случай - не msi-пакет
 						$returnval = ([WMICLASS]"\\$ComputerName\ROOT\CIMV2:win32_process").Create(
-							"$uninstall_key /S /x /silent /uninstall /qn /quiet")
+							"$uninstall_key /S /x /silent /uninstall /qn /quiet /norestart")
 					}
 					$returnvalue = $returnval.returnvalue
 				}
@@ -272,31 +230,31 @@ function Install-Program()
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername, 
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$InstallParams = "", 
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$UseOnlyInstallParams
 	)
 	
 	$file = Get-Item $ProgSource
+	$params = ""
 	if( $file.Extension -ine ".msi")
 	{
 		if(!$UseOnlyInstallParams) {
 			$params = "/S /silent /quiet /norestart /q /qn"
-		} else {
-			$params = ""
-		}
-		psexec -is \\$ComputerName $ProgSource $params $InstallParams
+		} 
+		&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams
 	} else {
 		if(!$UseOnlyInstallParams) {
 			$params = "/quiet /norestart /qn"
-		} else {
-			$params = ""
 		}
-		psexec -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams
+		&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams
 	}
 }
