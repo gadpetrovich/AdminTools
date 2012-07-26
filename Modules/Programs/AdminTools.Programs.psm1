@@ -56,13 +56,13 @@ function Get-Program
 {
 	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(position=0,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
 		
-		[parameter(position=1,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
+		[parameter(position=1,Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
 		[string[]]$AppName,
 		
-		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
+		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
 		[string]$AppMatch = ""
 	)            
 
@@ -173,9 +173,9 @@ function Uninstall-Program
 {
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
-		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
 		[switch]$Force
 	)          
@@ -230,16 +230,16 @@ function Install-Program()
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername, 
 		
-		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
 		
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$InstallParams = "", 
 		
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[switch]$UseOnlyInstallParams
 	)
 	
