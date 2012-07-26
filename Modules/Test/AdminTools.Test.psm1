@@ -105,7 +105,7 @@ function Join-Object
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		$InputObject,
+		$InputObject, 
 		$JoinObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
 		[String[]]$InputProperty = "*",
@@ -120,27 +120,28 @@ function Join-Object
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
 				
 				$out = New-Object -TypeName PSobject             
-					
+				
 				# извлекаем свойства из первого списка
+				#write-host $i $i.Gettype().fullname
 				if( $i -is [PSObject] ){
-					$props = @(); 
-					$i | Get-Member -MemberType *Property -Name $InputProperty | % { $props += $_.Name }
+					#write-host $i " is psobject"
+					$props = $i | Get-Member -MemberType *Property -Name $InputProperty
 					foreach($ip in $props) {
-						$out | Add-Member -MemberType NoteProperty -Name $ip -Value $i.$ip
+						$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value $i.($ip.Name)
 					}
 				} else {
+					#write-host $i " not is psobject"
 					$out | Add-Member -MemberType NoteProperty -Name Value -Value $i
-				}
+				} 
 				# извлекаем свойства из второго списка
 				if( $j -is [PSObject] ){
-					$props = @(); 
-					$j | Get-Member -MemberType *Property -Name $JoinProperty | % { $props += $_.Name }
+					$props = $j | Get-Member -MemberType *Property -Name $JoinProperty
 					foreach($jp in $props) {
-						$jp_name = $jp
-						if (($out | Get-Member -Name $jp) -ne $null) {
-							$jp_name = "Join" + $jp
+						$jp_name = $jp.Name
+						if (($out | Get-Member -Name $jp_name) -ne $null) {
+							$jp_name = "Join" + $jp_name
 						}
-						$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.$jp
+						$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.($jp.Name)
 					}
 				} else {
 					$out | Add-Member -MemberType NoteProperty -Name JoinValue -Value $j
