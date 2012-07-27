@@ -61,10 +61,22 @@ function Get-NetObject([string]$Match)
   Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param() ( { param($i,$j); ... }). Переменная $i содержит объект из InputObject, $j - из JoinObject.
   
  .Parameter InputProperty
-  Список полей из InputObject для добавления в результирующий список.
+  Указывает список полей из InputObject для добавления в результирующий список. Подстановочные знаки разрешены.
+
+  Значение параметра InputProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+  -- Name (или Label) <строка>
+  -- Expression <строка> или <блок скрипта>
   
+  К именам полей, совпадающим с уже существующими полями, будет добавляться префикс "Join".
+ 
  .Parameter JoinProperty
-  Список полей из JoinObject для добавления в результирующий список. К именам полей, совпадающим с полями из InputObject, будет добавляться префикс "Join".
+  Указывает список полей из JoinObject для добавления в результирующий список. Подстановочные знаки разрешены.
+
+  Значение параметра JoinProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+  -- Name (или Label) <строка>
+  -- Expression <строка> или <блок скрипта>
+  
+  К именам полей, совпадающим с уже существующими полями, будет добавляться префикс "Join".
 
  .Example
    PS C:\> $a = get-childitem c:\dir1
@@ -74,7 +86,16 @@ function Get-NetObject([string]$Match)
    Описание
    -----------
    Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. 
-   
+ 
+ .Example
+   PS C:\> $a = get-childitem c:\dir1
+   PS C:\> $b = get-childitem c:\dir2
+   PS C:\> Join-Object $a $b { param($i,$j); $i.name -eq $j.name } name, LastWriteTime @{Name = "Dir2_LastWriteTime"; Expression = {$_.LastWriteTime}}
+
+   Описание
+   -----------
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Параметр LasWriteTime во втором списке переименовывается в Dir2_LastWriteTime.
+     
  .Example
    PS C:\> $a = get-childitem c:\dir1
    PS C:\> $b = get-childitem c:\dir2
@@ -92,8 +113,8 @@ function Get-NetObject([string]$Match)
    На экран будут выведены суммы чисел, равных 10-и.
  
  .Example
-   PS C:\> $comp1 = Get-InstalledSoftware comp1
-   PS C:\> $comp2 = Get-InstalledSoftware comp2
+   PS C:\> $comp1 = Get-Program comp1
+   PS C:\> $comp2 = Get-Program comp2
    PS C:\> Join-Object $comp1 $comp2 { param($i, $j); $i.AppName -eq $j.AppName } AppName, InstalledDate InstalledDate
  
    Описание
@@ -109,14 +130,14 @@ function Join-Object
 		$InputObject, 
 		$JoinObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
-		[String[]]$InputProperty = "*",
-		[String[]]$JoinProperty = "*"
+		[Object[]]$InputProperty = $null,
+		[Object[]]$JoinProperty = $null
 	)
 	
 	begin{}
 	process {
 		
-		function freeJoinParameter($Obj, $PropName) 
+		function getFreeJoinParameter($Obj, $PropName) 
 		{
 			$name = $PropName
 			if ($Obj | Get-Member -Name $name) {
@@ -131,16 +152,19 @@ function Join-Object
 
 		function addJoinParameter($out, $i, $properties)
 		{
-			$props = $i | Get-Member -MemberType *Property -Name $properties	
+			$prop_list = $i | select $properties 
+			$props = $prop_list | Get-Member -MemberType *Property
 			#  "$i -is [PSObject] не подходит, т.к. для параметра InputObject в виде 1,2 
 			#  он будет возвращать $true. $false будет, если параметр указать в виде (1,2) или @(1,2).
 			if( $i -is [PSObject] -and $props){
+				
 				foreach($ip in $props) {
-					$ip_name = freeJoinParameter $out $ip.Name
-					$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $i.($ip.Name)
+					
+					$ip_name = getFreeJoinParameter $out $ip.Name
+					$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
 				}
 			} else {
-				$ip_name = freeJoinParameter $out "Value"
+				$ip_name = getFreeJoinParameter $out "Value"
 				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $i
 			} 
 		}
@@ -150,12 +174,8 @@ function Join-Object
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
 				
 				$out = New-Object -TypeName PSobject             
-				
-				# извлекаем свойства из первого списка.
 				addJoinParameter $out $i $InputProperty
-				# извлекаем свойства из второго списка.
 				addJoinParameter $out $j $JoinProperty
-				
 				$out
 			}
 		}
