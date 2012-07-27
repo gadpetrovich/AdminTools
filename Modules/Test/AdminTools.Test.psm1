@@ -42,6 +42,7 @@ function Get-NetObject([string]$Match)
 	}
 }
 
+
 <# 
  .Synopsis
   Объединяет два списка в один.
@@ -115,37 +116,46 @@ function Join-Object
 	begin{}
 	process {
 		
+		function freeJoinParameter($Obj, $PropName) 
+		{
+			$name = $PropName
+			if ($Obj | Get-Member -Name $name) {
+				$name = "Join$PropName"
+			}
+			
+			for ($i = 2; $Obj | Get-Member -Name $name; $i++) {
+				$name = "Join$PropName$i"
+			}
+			return $name
+		}
+
+		function addJoinParameter($out, $i, $properties)
+		{
+			$props = $i | Get-Member -MemberType *Property -Name $properties	
+			#  "$i -is [PSObject] не подходит, т.к. для параметра InputObject в виде 1,2 
+			#  он будет возвращать $true. $false будет, если параметр указать в виде (1,2) или @(1,2).
+			if( $i -is [PSObject] -and $props){
+				foreach($ip in $props) {
+					$ip_name = freeJoinParameter $out $ip.Name
+					$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $i.($ip.Name)
+				}
+			} else {
+				$ip_name = freeJoinParameter $out "Value"
+				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $i
+			} 
+		}
+		
 		foreach($i in $InputObject) {
 			foreach($j in $JoinObject) {
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
 				
 				$out = New-Object -TypeName PSobject             
 				
-				# извлекаем свойства из первого списка
-				#write-host $i $i.Gettype().fullname
-				if( $i -is [PSObject] ){
-					#write-host $i " is psobject"
-					$props = $i | Get-Member -MemberType *Property -Name $InputProperty
-					foreach($ip in $props) {
-						$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value $i.($ip.Name)
-					}
-				} else {
-					#write-host $i " not is psobject"
-					$out | Add-Member -MemberType NoteProperty -Name Value -Value $i
-				} 
-				# извлекаем свойства из второго списка
-				if( $j -is [PSObject] ){
-					$props = $j | Get-Member -MemberType *Property -Name $JoinProperty
-					foreach($jp in $props) {
-						$jp_name = $jp.Name
-						if (($out | Get-Member -Name $jp_name) -ne $null) {
-							$jp_name = "Join" + $jp_name
-						}
-						$out | Add-Member -MemberType NoteProperty -Name $jp_name -Value $j.($jp.Name)
-					}
-				} else {
-					$out | Add-Member -MemberType NoteProperty -Name JoinValue -Value $j
-				}
+				# извлекаем свойства из первого списка.
+				addJoinParameter $out $i $InputProperty
+				# извлекаем свойства из второго списка.
+				addJoinParameter $out $j $JoinProperty
+				
 				$out
 			}
 		}
