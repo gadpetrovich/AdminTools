@@ -245,16 +245,41 @@ function Install-Program()
 	
 	$file = Get-Item $ProgSource
 	$params = ""
-	if( $file.Extension -ine ".msi")
-	{
+	
+	$before_install_state = Get-Program -ComputerName $ComputerName
+	if( $file.Extension -ine ".msi") {
 		if(!$UseOnlyInstallParams) {
 			$params = "/S /silent /quiet /norestart /q /qn"
 		} 
-		&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams
+		&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams 2>$null
 	} else {
 		if(!$UseOnlyInstallParams) {
 			$params = "/quiet /norestart /qn"
 		}
-		&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams
+		&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams 2>$null
 	}
+	$after_install_state = Get-Program -ComputerName $ComputerName
+	$diff = @(diff $before_install_state $after_install_state)
+	
+	if ($diff) {
+		foreach( $i in $diff) {
+			$OutputObj = New-Object -TypeName PSobject             
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
+		
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.InputObject.AppName
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.InputObject.AppVersion
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.InputObject.AppVendor
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.InputObject.AppGUID
+			$OutputObj
+		}
+	} else {
+		$OutputObj = New-Object -TypeName PSobject             
+		$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+		$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
+		$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
+		$OutputObj
+	}
+	
 }
