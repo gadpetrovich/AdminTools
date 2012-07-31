@@ -258,8 +258,9 @@ function Install-Program()
 		}
 		&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams 2>$null
 	}
+	Sleep 2
 	$after_install_state = Get-Program -ComputerName $ComputerName
-	$diff = @(diff $before_install_state $after_install_state)
+	$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID)
 	
 	if ($diff) {
 		foreach( $i in $diff) {
@@ -268,10 +269,10 @@ function Install-Program()
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
 		
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.InputObject.AppName
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.InputObject.AppVersion
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.InputObject.AppVendor
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.InputObject.AppGUID
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
 			$OutputObj
 		}
 	} else {
