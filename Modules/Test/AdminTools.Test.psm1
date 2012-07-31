@@ -61,7 +61,7 @@ function Get-NetObject([string]$Match)
   Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.
   
  .Parameter LeftProperty
-  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены.
+  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то LeftObject будет добавлен, как значение (под именем "Value").
 
   Значение параметра LeftProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -70,7 +70,7 @@ function Get-NetObject([string]$Match)
   К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
  
  .Parameter RightProperty
-  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены.
+  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то RightObject будет добавлен, как значение (под именем "Value").
 
   Значение параметра RightProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -206,34 +206,38 @@ function Join-Object
 			}
 			return $prop_list
 		}
-		function addJoinParameter($out, $source, $prop_list)
+		function addProperty($out, $prop_list)
+		{			
+			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
+				$ip_name = getFreeJoinParameter $out $ip.Name
+				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
+			}
+		}
+		function addValue($out, $source)
 		{
-			#$prop_list = $source | select $properties 
-			
-			# $props содержит описания выбранных свойств
-			$props = $prop_list | Get-Member -MemberType *Property
-			#  "$source -is [PSObject] не подходит, т.к. для параметра LeftObject в виде 1,2 
-			#  он будет возвращать $true. $false будет, если параметр указать в виде (1,2) или @(1,2).
-			if( $source -is [PSObject] -and $props){
-				foreach($ip in $props) {		
-					$ip_name = getFreeJoinParameter $out $ip.Name
-					$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
-				}
-			} else {
-				$ip_name = getFreeJoinParameter $out "Value"
-				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $source
-			} 
+			$ip_name = getFreeJoinParameter $out "Value"
+			$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $source
 		}
 		
 		foreach($i in $LeftObject) {
 			foreach($j in $RightObject) {
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
-				$out = New-Object -TypeName PSobject             
-				addJoinParameter $out $i ($i | select $LeftProperty)
-				addJoinParameter $out $j ($j | select $RightProperty)
+				$out = New-Object -TypeName PSobject    
+				
+				if($LeftProperty) {
+					addProperty $out ($i | select $LeftProperty)
+				} else {
+					addValue $out $i
+				}
+				
+				if($RightProperty) {
+					addProperty $out ($j | select $RightProperty)
+				} else {
+					addValue $out $j
+				}
+				
 				if($CustomProperty) {
-					$custom = fillTempObject $CustomProperty $i $j
-					addJoinParameter $out $custom $custom
+					addProperty $out (fillTempObject $CustomProperty $i $j)
 				}
 				$out
 			}
