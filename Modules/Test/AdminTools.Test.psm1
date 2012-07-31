@@ -48,36 +48,47 @@ function Get-NetObject([string]$Match)
   Объединяет два списка в один.
 
  .Description
-  Результат выполнения Join-Object представляет собой декартово произведение двух списков, представленных параметрами InputObject и JoinObject. Если какие-либо имена полей у InputObject и JoinObject совпадают, то к имени поля из списка JoinObject добавляется строка "Join". Например при объединении списков, содеражих одинаковые поля (Id, Name), получаем результирующий список в полями: Id, Name, JoinId, JoinName.
-  В случае, когда элементы списков не наследуются от класса PSObject, параметры InputProperty и JoinProperty неиспользуются, и имена полей результирующего списка выбираются, как "Value" и "JoinValue".
+  Результат выполнения Join-Object представляет собой декартово произведение двух списков, представленных параметрами LeftObject и RightObject. Если какие-либо имена свойств у LeftObject и RightObject совпадают, то к имени свойства из списка RightObject добавляется строка "Join". Например при объединении списков, содеражих одинаковые свойства (Id, Name), получаем результирующий список со свойствами: Id, Name, JoinId, JoinName.
+  В случае, когда элементы списков не наследуются от класса PSObject, параметры LeftProperty и RightProperty неиспользуются, и имена свойств результирующего списка выбираются, как "Value" и "JoinValue".
     
- .Parameter InputObject
+ .Parameter LeftObject
   Первый список для объединения. Может использоваться для перадачи объектов по конвейеру.
 
- .Parameter JoinObject
-  Второй список для объединения. К именам полей, совпадающим с полями из InputObject, будет добавляться префикс "Join".
+ .Parameter RightObject
+  Второй список для объединения. К именам свойств, совпадающим с полями из LeftObject, будет добавляться префикс "Join".
  
  .Parameter FilterScript
-  Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param() ( { param($i,$j); ... }). Переменная $i содержит объект из InputObject, $j - из JoinObject.
+  Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.
   
- .Parameter InputProperty
-  Указывает список полей из InputObject для добавления в результирующий список. Подстановочные знаки разрешены.
+ .Parameter LeftProperty
+  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены.
 
-  Значение параметра InputProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+  Значение параметра LeftProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
   -- Expression <строка> или <блок скрипта>
   
-  К именам полей, совпадающим с уже существующими полями, будет добавляться префикс "Join".
+  К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
  
- .Parameter JoinProperty
-  Указывает список полей из JoinObject для добавления в результирующий список. Подстановочные знаки разрешены.
+ .Parameter RightProperty
+  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены.
 
-  Значение параметра JoinProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+  Значение параметра RightProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
   -- Expression <строка> или <блок скрипта>
   
-  К именам полей, совпадающим с уже существующими полями, будет добавляться префикс "Join".
+  К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
 
+ .Parameter CustomProperty
+  Добавляет свойства, которые вычисляются из значений в обоих объектах.
+  
+  Значение параметра CustomProperty должно быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+  -- Name (или Label) <строка>
+  -- Expression <блок скрипта>
+  
+  Для передачи параметров в блок скрипта используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.  
+  
+  К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
+  
  .Example
    PS C:\> $a = get-childitem c:\dir1
    PS C:\> $b = get-childitem c:\dir2
@@ -99,14 +110,23 @@ function Get-NetObject([string]$Match)
  .Example
    PS C:\> $a = get-childitem c:\dir1
    PS C:\> $b = get-childitem c:\dir2
-   PS C:\> $a | Join-Object -JoinObject $b -where { param($i,$j); $i.name -eq $j.name } -InputProperty name, LastWriteTime -JoinProperty LastWriteTime
+   PS C:\> Join-Object $a $b { param($i,$j); $i.name -eq $j.name } name, LastWriteTime LastWriteTime  @{Name = "diff"; Expression={param($i,$j);  [int]($i.LastWriteTime - $j.LastWriteTime).TotalDays }}
 
    Описание
    -----------
-   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра InputObject через конвейер.
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2 и разницу в днях для свойств LastWriteTime. 
    
  .Example
-   PS C:\> Join-Object (1..9) (1..9) { param($i, $j); $i+$j -eq 10 }
+   PS C:\> $a = get-childitem c:\dir1
+   PS C:\> $b = get-childitem c:\dir2
+   PS C:\> $a | Join-Object -RightObject $b -where { param($i,$j); $i.name -eq $j.name } -LeftProperty name, LastWriteTime -RightProperty LastWriteTime
+
+   Описание
+   -----------
+   Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра LeftObject через конвейер.
+   
+ .Example
+   PS C:\> Join-Object (1..9) (1..9) { param($i, $j); $i+$j -eq 10 } 
    
    Описание
    -----------
@@ -127,11 +147,12 @@ function Join-Object
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		$InputObject, 
-		$JoinObject,
+		$LeftObject, 
+		$RightObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
-		[Object[]]$InputProperty = $null,
-		[Object[]]$JoinProperty = $null
+		[Object[]]$LeftProperty = $null,
+		[Object[]]$RightProperty = $null,
+		[Hashtable[]]$CustomProperty = $null
 	)
 	
 	begin{}
@@ -150,32 +171,70 @@ function Join-Object
 			return $name
 		}
 
-		function addJoinParameter($out, $i, $properties)
+		function fillTempObject($properties, $left, $right)
 		{
-			$prop_list = $i | select $properties 
-			$props = $prop_list | Get-Member -MemberType *Property
-			#  "$i -is [PSObject] не подходит, т.к. для параметра InputObject в виде 1,2 
-			#  он будет возвращать $true. $false будет, если параметр указать в виде (1,2) или @(1,2).
-			if( $i -is [PSObject] -and $props){
-				
-				foreach($ip in $props) {
+			$prop_list = New-Object -Type PSObject
+			# заполняем промежуточный объект $prop_list
+			foreach($p in $properties) {
+				if( $p -is [Hashtable] ) {
+					# вычисляемое поле
+					# блок проверки
+					if( ! ($p.ContainsKey("Name") -or $p.ContainsKey("Label")) ) {
+						throw "Параметр не имеет имени"
+					}
+					if ( ! ($p.ContainsKey("Expression") -and $p.Expression -is [ScriptBlock]) ) {
+						throw "Параметр не имеет выполняемого блока"
+					}
+					# имя
+					if ($p.ContainsKey("Name")) { 
+						$name = $p.Name 
+					} else { 
+						$name = $p.Label
+					}
+					# выражение					
+					$expression = $p.Expression.Invoke($left, $right)
+					if( $expression.Count -eq 0) {
+						$expression = $null
+					} elseif( $expression.Count -eq 1) {
+						$expression = $expression[0]
+					}
 					
+					$prop_list | Add-Member -MemberType NoteProperty -Name $name -Value $expression
+				} else {
+					throw "Параметр должен быть типа Hashtable"
+				}
+			}
+			return $prop_list
+		}
+		function addJoinParameter($out, $source, $prop_list)
+		{
+			#$prop_list = $source | select $properties 
+			
+			# $props содержит описания выбранных свойств
+			$props = $prop_list | Get-Member -MemberType *Property
+			#  "$source -is [PSObject] не подходит, т.к. для параметра LeftObject в виде 1,2 
+			#  он будет возвращать $true. $false будет, если параметр указать в виде (1,2) или @(1,2).
+			if( $source -is [PSObject] -and $props){
+				foreach($ip in $props) {		
 					$ip_name = getFreeJoinParameter $out $ip.Name
 					$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
 				}
 			} else {
 				$ip_name = getFreeJoinParameter $out "Value"
-				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $i
+				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $source
 			} 
 		}
 		
-		foreach($i in $InputObject) {
-			foreach($j in $JoinObject) {
+		foreach($i in $LeftObject) {
+			foreach($j in $RightObject) {
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
-				
 				$out = New-Object -TypeName PSobject             
-				addJoinParameter $out $i $InputProperty
-				addJoinParameter $out $j $JoinProperty
+				addJoinParameter $out $i ($i | select $LeftProperty)
+				addJoinParameter $out $j ($j | select $RightProperty)
+				if($CustomProperty) {
+					$custom = fillTempObject $CustomProperty $i $j
+					addJoinParameter $out $custom $custom
+				}
 				$out
 			}
 		}
