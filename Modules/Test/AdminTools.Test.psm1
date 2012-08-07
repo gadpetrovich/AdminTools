@@ -141,6 +141,8 @@ function Get-NetObject([string]$Match)
    -----------
    Вывод дат установки одноименных программ на разных компьютерах.
  
+ .Link
+   http://blogs.msdn.com/b/powershell/archive/2012/07/13/join-object.aspx
 #>
 function Join-Object
 {
