@@ -1,4 +1,4 @@
-foreach($module in (ls $PSScriptRoot\Modules)) {
+﻿foreach($module in (ls $PSScriptRoot\Modules)) {
 	import-module "$PSScriptRoot\Modules\$module\AdminTools.$module"
 }
 

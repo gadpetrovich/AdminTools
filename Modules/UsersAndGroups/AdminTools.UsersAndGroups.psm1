@@ -1,4 +1,4 @@
-
+п»ї
 function check_user_into_admin_group([string]$UserName, [ADSI]$group)
 {
     $group_members = @($group.psbase.Invoke("Members"))
@@ -11,7 +11,7 @@ function check_user_into_admin_group([string]$UserName, [ADSI]$group)
 }
 
 # http://social.technet.microsoft.com/Forums/ru-RU/scrlangru/thread/c44049a6-7c8b-462e-9bb9-61ce1e16f4ab/
-# добавляем пользователя в группу локальных администраторов
+# РґРѕР±Р°РІР»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ РіСЂСѓРїРїСѓ Р»РѕРєР°Р»СЊРЅС‹С… Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ
 function Add-UserToAdmin
 {
 	[cmdletbinding()]
@@ -34,11 +34,11 @@ function Add-UserToAdmin
     }
     else
     {
-        throw "Пользователь $UserName уже добавлен в список локальных администраторов"
+        throw "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ $UserName СѓР¶Рµ РґРѕР±Р°РІР»РµРЅ РІ СЃРїРёСЃРѕРє Р»РѕРєР°Р»СЊРЅС‹С… Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ"
     }
 }
 
-# удаляем пользователя из группы локальных администраторов
+# СѓРґР°Р»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· РіСЂСѓРїРїС‹ Р»РѕРєР°Р»СЊРЅС‹С… Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ
 function Remove-UserFromAdmin
 {
 	[cmdletbinding()]
@@ -61,7 +61,7 @@ function Remove-UserFromAdmin
     }
     else
     {
-        throw "Пользователь $UserName отсутствует в списке локальных администраторов"
+        throw "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ $UserName РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РІ СЃРїРёСЃРєРµ Р»РѕРєР°Р»СЊРЅС‹С… Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ"
     }
     
 }

@@ -1,14 +1,14 @@
-
-# аналог юникосовой программы du
-# ниже расположен рекурсивный аналог данной функции
-# здесь же пришлось развернуть рекурсию для вывода данных прямо во время сканирования папки
+п»ї
+# Р°РЅР°Р»РѕРі СЋРЅРёРєРѕСЃРѕРІРѕР№ РїСЂРѕРіСЂР°РјРјС‹ du
+# РЅРёР¶Рµ СЂР°СЃРїРѕР»РѕР¶РµРЅ СЂРµРєСѓСЂСЃРёРІРЅС‹Р№ Р°РЅР°Р»РѕРі РґР°РЅРЅРѕР№ С„СѓРЅРєС†РёРё
+# Р·РґРµСЃСЊ Р¶Рµ РїСЂРёС€Р»РѕСЃСЊ СЂР°Р·РІРµСЂРЅСѓС‚СЊ СЂРµРєСѓСЂСЃРёСЋ РґР»СЏ РІС‹РІРѕРґР° РґР°РЅРЅС‹С… РїСЂСЏРјРѕ РІРѕ РІСЂРµРјСЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ РїР°РїРєРё
 function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, [switch]$ShowLevel, [switch]$ShowProgress)
 {
-	#список директорий
+	#СЃРїРёСЃРѕРє РґРёСЂРµРєС‚РѕСЂРёР№
 	$dirs = New-Object System.Collections.Generic.List[System.Object];
-	#список индексов файлов в директориях
+	#СЃРїРёСЃРѕРє РёРЅРґРµРєСЃРѕРІ С„Р°Р№Р»РѕРІ РІ РґРёСЂРµРєС‚РѕСЂРёСЏС…
 	$indexes = New-Object System.Collections.Generic.List[System.Object];
-	#список размеров папок
+	#СЃРїРёСЃРѕРє СЂР°Р·РјРµСЂРѕРІ РїР°РїРѕРє
 	$sizes = New-Object System.Collections.Generic.List[System.Object];
 	
 	$dir = @(Get-ChildItem -LiteralPath $LiteralPath -Force)
@@ -17,19 +17,19 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 	$indexes.add(0)
 	$sizes.add(0)
 	
-	#уровень вложенности
+	#СѓСЂРѕРІРµРЅСЊ РІР»РѕР¶РµРЅРЅРѕСЃС‚Рё
 	$level = 0
 	while($true)
 	{
 		while ($indexes[$level] -ge $dirs[$level].Length)
-		{#конец папки, переходим на уровень ниже
+		{#РєРѕРЅРµС† РїР°РїРєРё, РїРµСЂРµС…РѕРґРёРј РЅР° СѓСЂРѕРІРµРЅСЊ РЅРёР¶Рµ
 			if ($ShowProgress -and ($level -lt 4)) {
-				Write-Progress -Id $level -activity "Вычисление размера" -status "Сканирование"  -Complete
+				Write-Progress -Id $level -activity "Р’С‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂР°" -status "РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ"  -Complete
 			}
 			$size = $sizes[$level]
 			if ($level -eq 0) { 
-				# выходим
-				#"Размер папки $LiteralPath = $size"
+				# РІС‹С…РѕРґРёРј
+				#"Р Р°Р·РјРµСЂ РїР°РїРєРё $LiteralPath = $size"
 				#$obj = New-Object -TypeName PSobject             
 				#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value (get-item -LiteralPath $LiteralPath -force).FullName
 				$obj = Get-Item -Force -LiteralPath $LiteralPath
@@ -45,7 +45,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 			$sizes.RemoveAt($level)
 			$level--
 			
-			#"вышли из папки " + $dirs[$level][ $indexes[$level] ].FullName + " размер = " + $size
+			#"РІС‹С€Р»Рё РёР· РїР°РїРєРё " + $dirs[$level][ $indexes[$level] ].FullName + " СЂР°Р·РјРµСЂ = " + $size
 			if($level -lt $Depth) {
 				#$obj = New-Object -TypeName PSobject             
 				#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $dirs[$level][ $indexes[$level] ].FullName
@@ -60,16 +60,16 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 		$file = $dirs[$level][ $indexes[$level] ]
 		
 		if ($ShowProgress -and ($dirs[$level].length -gt 0) -and ($level -lt 4)) {
-			Write-Progress -Id $level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($sizes[$level] / 1MB))) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
+			Write-Progress -Id $level -activity ("Р’С‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂР°: " + ("{0:N3} MB" -f ($sizes[$level] / 1MB))) -status ("РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
 		}
 		
 		
-		#"уровень = " + $level + " длина = " + $dirs[$level].Length + " индекс = " + $indexes[$level] + " имя файла = " +  $file.FullName
+		#"СѓСЂРѕРІРµРЅСЊ = " + $level + " РґР»РёРЅР° = " + $dirs[$level].Length + " РёРЅРґРµРєСЃ = " + $indexes[$level] + " РёРјСЏ С„Р°Р№Р»Р° = " +  $file.FullName
 		
 		if($file.PSIsContainer) {
-			#папка, переходим на уровень выше
+			#РїР°РїРєР°, РїРµСЂРµС…РѕРґРёРј РЅР° СѓСЂРѕРІРµРЅСЊ РІС‹С€Рµ
 		
-			#"вошли в папку " + $file.FullName
+			#"РІРѕС€Р»Рё РІ РїР°РїРєСѓ " + $file.FullName
 			$dir = @(Get-ChildItem -LiteralPath $file.FullName -Force)
 			
 			$level++
@@ -77,7 +77,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 			$indexes.Add(0)
 			$sizes.Add(0)
 		} else {
-			# обычный файл
+			# РѕР±С‹С‡РЅС‹Р№ С„Р°Р№Р»
 			$sizes[$level] += $file.Length
 			$indexes[$level]++			
 		}
@@ -94,7 +94,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	foreach ($i in $dir)
 	{	
 		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 4)) {
-			Write-Progress -Id $Level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($size / 1MB))) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
+			Write-Progress -Id $Level -activity ("Р’С‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂР°: " + ("{0:N3} MB" -f ($size / 1MB))) -status ("РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
 		}
 		if ( $i.PSIsContainer ) {
 			$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
@@ -108,7 +108,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 		$j++
 	}
 	if ($ShowProgress -and ($Level -lt 4)) {
-		Write-Progress -Id $Level -activity "Вычисление размера" -status "Сканирование"  -Complete
+		Write-Progress -Id $Level -activity "Р’С‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂР°" -status "РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ"  -Complete
 	}
 	#$obj = New-Object -TypeName PSobject             
 	#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $LiteralPath
@@ -121,8 +121,8 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	#$obj.Length.ToString() + "`t" + $obj.FullName | write-host 
 	return $list
 }
-# рекурсивное вычисление размера папки
-# $ShowProgress - отображать ход сканирования (до 4 уровней)
+# СЂРµРєСѓСЂСЃРёРІРЅРѕРµ РІС‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂР° РїР°РїРєРё
+# $ShowProgress - РѕС‚РѕР±СЂР°Р¶Р°С‚СЊ С…РѕРґ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ (РґРѕ 4 СѓСЂРѕРІРЅРµР№)
 # 
 function Get-DiskUsageRecursive(
 	[string]$LiteralPath = ".", 
@@ -136,49 +136,49 @@ function Get-DiskUsageRecursive(
 
 <# 
  .Synopsis
-  Возращает список вложенных каталогов с их суммарными размерами.
+  Р’РѕР·СЂР°С‰Р°РµС‚ СЃРїРёСЃРѕРє РІР»РѕР¶РµРЅРЅС‹С… РєР°С‚Р°Р»РѕРіРѕРІ СЃ РёС… СЃСѓРјРјР°СЂРЅС‹РјРё СЂР°Р·РјРµСЂР°РјРё.
 
  .Description
-  Выполняет полное сканирование указанного каталога. 
+  Р’С‹РїРѕР»РЅСЏРµС‚ РїРѕР»РЅРѕРµ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РєР°С‚Р°Р»РѕРіР°. 
  
   
  .Parameter LiteralPath
-  Каталог, размер которого требуется подсчитать.
+  РљР°С‚Р°Р»РѕРі, СЂР°Р·РјРµСЂ РєРѕС‚РѕСЂРѕРіРѕ С‚СЂРµР±СѓРµС‚СЃСЏ РїРѕРґСЃС‡РёС‚Р°С‚СЊ.
 
  .Parameter Depth
-  Глубина вложенности каталогов. Требуется для ограничения отображаемых данных (на процесс сканирования никак не влияет).
+  Р“Р»СѓР±РёРЅР° РІР»РѕР¶РµРЅРЅРѕСЃС‚Рё РєР°С‚Р°Р»РѕРіРѕРІ. РўСЂРµР±СѓРµС‚СЃСЏ РґР»СЏ РѕРіСЂР°РЅРёС‡РµРЅРёСЏ РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹С… РґР°РЅРЅС‹С… (РЅР° РїСЂРѕС†РµСЃСЃ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ РЅРёРєР°Рє РЅРµ РІР»РёСЏРµС‚).
  
  .Parameter ShowLevel
-  Добавляет столбец Level, в нем указан уровень вложенности каталога.
+  Р”РѕР±Р°РІР»СЏРµС‚ СЃС‚РѕР»Р±РµС† Level, РІ РЅРµРј СѓРєР°Р·Р°РЅ СѓСЂРѕРІРµРЅСЊ РІР»РѕР¶РµРЅРЅРѕСЃС‚Рё РєР°С‚Р°Р»РѕРіР°.
   
  .Parameter ShowProgress
-  Отображает прогресс сканирования каталогов. Уровень сканирования не зависит от параметра Depth и равен 4.
+  РћС‚РѕР±СЂР°Р¶Р°РµС‚ РїСЂРѕРіСЂРµСЃСЃ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ РєР°С‚Р°Р»РѕРіРѕРІ. РЈСЂРѕРІРµРЅСЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ РЅРµ Р·Р°РІРёСЃРёС‚ РѕС‚ РїР°СЂР°РјРµС‚СЂР° Depth Рё СЂР°РІРµРЅ 4.
   
  .Parameter RecursiveAlgorithm
-  Используется рекурсивный алгоритм для сканирования папок (в данном случае в вывод данные отдаются только после выполнения фукнции).
+  РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ СЂРµРєСѓСЂСЃРёРІРЅС‹Р№ Р°Р»РіРѕСЂРёС‚Рј РґР»СЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ РїР°РїРѕРє (РІ РґР°РЅРЅРѕРј СЃР»СѓС‡Р°Рµ РІ РІС‹РІРѕРґ РґР°РЅРЅС‹Рµ РѕС‚РґР°СЋС‚СЃСЏ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РІС‹РїРѕР»РЅРµРЅРёСЏ С„СѓРєРЅС†РёРё).
 
  .Example
-   # Размеры текущей и вложенных папок.
+   # Р Р°Р·РјРµСЂС‹ С‚РµРєСѓС‰РµР№ Рё РІР»РѕР¶РµРЅРЅС‹С… РїР°РїРѕРє.
    Get-DiskUsage | select FullName, Length
 
  .Example
-   # Размер текущей папки.
+   # Р Р°Р·РјРµСЂ С‚РµРєСѓС‰РµР№ РїР°РїРєРё.
    Get-DiskUsage . -Depth 0 | select FullName, Length
  
  .Example 
-   # Отобразить информацию о ходе выполнения сканирования.
+   # РћС‚РѕР±СЂР°Р·РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С…РѕРґРµ РІС‹РїРѕР»РЅРµРЅРёСЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ.
    Get-DiskUsage . -ShowProgress | select FullName, Length
    
  .Example
-   # Вывести размеры каталогов в удобном виде.
+   # Р’С‹РІРµСЃС‚Рё СЂР°Р·РјРµСЂС‹ РєР°С‚Р°Р»РѕРіРѕРІ РІ СѓРґРѕР±РЅРѕРј РІРёРґРµ.
    Get-DiskUsage | Update-Length  | select FullName, Length
  
  .Example 
-   # Выполнить сканирование рекурсивно.
+   # Р’С‹РїРѕР»РЅРёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ СЂРµРєСѓСЂСЃРёРІРЅРѕ.
    Get-DiskUsage 'C:\Program Files' -RecursiveAlgorithm | ft -AutoSize FullName, Length
    
  .Example
-	# Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
+	# Р’С‹РІРµСЃС‚Рё 'С‚РѕРї 10' СЃР°РјС‹С… С‚РѕР»СЃС‚С‹С… РїР°РїРѕРє РІ 'C:\Program Files'.
    Get-DiskUsage 'C:\Program Files' -ShowProgress -ShowLevel | ? {$_.Level -eq 1} | sort Length -Descending | select FullName, Length -First 10 | Update-Length | ft -AutoSize
 #>
 function Get-DiskUsage(
@@ -199,27 +199,27 @@ function Get-DiskUsage(
 
 <# 
  .Synopsis
-  Обновляет список каталогов с их суммарными размерами.
+  РћР±РЅРѕРІР»СЏРµС‚ СЃРїРёСЃРѕРє РєР°С‚Р°Р»РѕРіРѕРІ СЃ РёС… СЃСѓРјРјР°СЂРЅС‹РјРё СЂР°Р·РјРµСЂР°РјРё.
 
  .Description
-  Выполняет полное сканирование указанного каталога, Размер каталога записывается в поле Length. Изменения вносятся непосредственно в исходный список.
+  Р’С‹РїРѕР»РЅСЏРµС‚ РїРѕР»РЅРѕРµ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РєР°С‚Р°Р»РѕРіР°, Р Р°Р·РјРµСЂ РєР°С‚Р°Р»РѕРіР° Р·Р°РїРёСЃС‹РІР°РµС‚СЃСЏ РІ РїРѕР»Рµ Length. РР·РјРµРЅРµРЅРёСЏ РІРЅРѕСЃСЏС‚СЃСЏ РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РІ РёСЃС…РѕРґРЅС‹Р№ СЃРїРёСЃРѕРє.
  
  .Parameter InputObject
-   Список файлов и директорий. Может использоваться для передачи объектов по конвейеру.
+   РЎРїРёСЃРѕРє С„Р°Р№Р»РѕРІ Рё РґРёСЂРµРєС‚РѕСЂРёР№. РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂРµРґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
    
  .Example
    PS C:\> ls | ? { $_.PSIsContainer } | Update-DirLength
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Размеры папок в текущей директории.
+   Р Р°Р·РјРµСЂС‹ РїР°РїРѕРє РІ С‚РµРєСѓС‰РµР№ РґРёСЂРµРєС‚РѕСЂРёРё.
    
  .Example
    PS C:\> Update-DirLength $(gi dir1; gi dir2)
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Размеры директорий dir1 и dir2.
+   Р Р°Р·РјРµСЂС‹ РґРёСЂРµРєС‚РѕСЂРёР№ dir1 Рё dir2.
 #>
 function Update-DirLength
 {
@@ -244,33 +244,33 @@ function Update-DirLength
 
 <# 
  .Synopsis
-  Преобразует параметр Length в читаемый вид.
+  РџСЂРµРѕР±СЂР°Р·СѓРµС‚ РїР°СЂР°РјРµС‚СЂ Length РІ С‡РёС‚Р°РµРјС‹Р№ РІРёРґ.
 
  .Description
-  В результате выполнения данной функции в поле Length будет записана строка в формате "{0:N3} MB". Т.е. число будет преобразовано в более читаемый вид. Изменения вносятся непосредственно в исходный список.
+  Р’ СЂРµР·СѓР»СЊС‚Р°С‚Рµ РІС‹РїРѕР»РЅРµРЅРёСЏ РґР°РЅРЅРѕР№ С„СѓРЅРєС†РёРё РІ РїРѕР»Рµ Length Р±СѓРґРµС‚ Р·Р°РїРёСЃР°РЅР° СЃС‚СЂРѕРєР° РІ С„РѕСЂРјР°С‚Рµ "{0:N3} MB". Рў.Рµ. С‡РёСЃР»Рѕ Р±СѓРґРµС‚ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРѕ РІ Р±РѕР»РµРµ С‡РёС‚Р°РµРјС‹Р№ РІРёРґ. РР·РјРµРЅРµРЅРёСЏ РІРЅРѕСЃСЏС‚СЃСЏ РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РІ РёСЃС…РѕРґРЅС‹Р№ СЃРїРёСЃРѕРє.
  
  .Parameter InputObject
-   Список файлов и директорий. Может использоваться для передачи объектов по конвейеру.
+   РЎРїРёСЃРѕРє С„Р°Р№Р»РѕРІ Рё РґРёСЂРµРєС‚РѕСЂРёР№. РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂРµРґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
  
  .Parameter NumericParameter
-   Считываемый параметр. Значение по умолчанию "Length".
+   РЎС‡РёС‚С‹РІР°РµРјС‹Р№ РїР°СЂР°РјРµС‚СЂ. Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ "Length".
  
  .Parameter NewParameter
-   Добавляемый параметр. Содержит преобразованное значение из NumericParameter. По умолчанию то же имя, что и у NumericParameter.
+   Р”РѕР±Р°РІР»СЏРµРјС‹Р№ РїР°СЂР°РјРµС‚СЂ. РЎРѕРґРµСЂР¶РёС‚ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РёР· NumericParameter. РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ С‚Рѕ Р¶Рµ РёРјСЏ, С‡С‚Рѕ Рё Сѓ NumericParameter.
 
  .Example
    PS C:\> ls | Update-Length
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Размеры файлов в текущей директории.
+   Р Р°Р·РјРµСЂС‹ С„Р°Р№Р»РѕРІ РІ С‚РµРєСѓС‰РµР№ РґРёСЂРµРєС‚РѕСЂРёРё.
    
  .Example
    PS C:\> ls -force | ? { !$_.psiscontainer  } | Update-Length -NewParameter HLength | sort length -descending | select name , hlength
    
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Выводит имена и размеры файлов в отсортированном виде. Добавляется новый параметр HLength с результатами работы функции Update-Length.
+   Р’С‹РІРѕРґРёС‚ РёРјРµРЅР° Рё СЂР°Р·РјРµСЂС‹ С„Р°Р№Р»РѕРІ РІ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅРЅРѕРј РІРёРґРµ. Р”РѕР±Р°РІР»СЏРµС‚СЃСЏ РЅРѕРІС‹Р№ РїР°СЂР°РјРµС‚СЂ HLength СЃ СЂРµР·СѓР»СЊС‚Р°С‚Р°РјРё СЂР°Р±РѕС‚С‹ С„СѓРЅРєС†РёРё Update-Length.
    
 #>
 function Update-Length

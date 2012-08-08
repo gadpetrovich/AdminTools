@@ -1,4 +1,4 @@
-function Add-ComputerToAD(
+п»їfunction Add-ComputerToAD(
 	$OldComputerName,
 	$NewComputerName = $OldComputerName,
 	$Domain = $env:USERDNSDOMAIN,
@@ -6,10 +6,10 @@ function Add-ComputerToAD(
 {
 	#wmic.exe /interactive:off ComputerSystem Where "name = '%computername%'" call JoinDomainOrWorkgroup AccountOU="%AccOU%" FJoinOptions=3 Name="%NameDomain%" Password="%NewPass%" UserName="%NewAdmin%" >>rejoin.log
 	
-	# использование паролей:
+	# РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РїР°СЂРѕР»РµР№:
 	#http://bsonposh.com/archives/338
 	
-	# добавление в домен с переименовыванием компьютера
+	# РґРѕР±Р°РІР»РµРЅРёРµ РІ РґРѕРјРµРЅ СЃ РїРµСЂРµРёРјРµРЅРѕРІС‹РІР°РЅРёРµРј РєРѕРјРїСЊСЋС‚РµСЂР°
 	#http://blogs.technet.com/b/heyscriptingguy/archive/2012/02/29/use-powershell-to-replace-netdom-commands-to-join-the-domain.aspx
 	#(Get-WmiObject win32_computersystem).rename("newname")
 	#Add-Computer -Credential iammred\administrator -DomainName iammred.net
