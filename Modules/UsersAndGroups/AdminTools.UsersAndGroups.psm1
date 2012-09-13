@@ -16,9 +16,9 @@ function Add-UserToAdmin
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = ".", 
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName
 	)
 
@@ -43,9 +43,9 @@ function Remove-UserFromAdmin
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = ".", 
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName
 	)
 	

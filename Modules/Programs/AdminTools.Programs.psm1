@@ -56,13 +56,13 @@ function Get-Program
 {
 	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(position=0,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
 		
-		[parameter(position=1,Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
+		[parameter(position=1,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
 		[string[]]$AppName,
 		
-		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
 		[string]$AppMatch = ""
 	)            
 
@@ -173,9 +173,9 @@ function Uninstall-Program
 {
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
 		[switch]$Force
 	)          
@@ -226,61 +226,126 @@ function Uninstall-Program
 	end {}
 }
 
+
+<# 
+ .Synopsis
+  Устанавливает программу из указанного источника.
+
+ .Description
+  Устанавливает программу из указанного источника. Инсталляция производится с тихом режиме, для этого используются ключи "/quiet /norestart /qn" для нестандартных установщиков и "/S /silent /quiet /norestart /q /qn" для msi-пакетов. Для инсталляторов, не поддерживающих выше указанные ключи, нужно установить параметры UseOnlyInstallParams:$true и InstallParams с требуемыми ключами.
+ 
+ .Parameter ComputerName
+  Компьютер, на который требуется установить программу. Может использоваться для перадачи объектов по конвейеру.
+ 
+ .Parameter ProgSource
+  Путь к установщику программы. Может использоваться для перадачи объектов по конвейеру.
+
+ .Parameter InstallParams
+  Дополнительные параметры установки. Для дополнительных запросов можно использовать параметр Confirm.
+ 
+ .Parameter UseOnlyInstallParams
+  Использовать для установки только параметры из InstallParams. Для дополнительных запросов можно использовать параметр Confirm.
+  
+ .Outputs
+  PSObject. Содержит следующие параметры
+  ComputerName - имя компьютера
+  ProgSource   - файл инсталлятора
+  AppName      - имя программы
+  AppVersion   - версия приложения
+  AppGUID      - GUID приложения
+  AppVendor    - вендор
+  ReturnValue  - результат выполнения
+  
+ .Example
+   PS C:\> Install-Program testprogram
+
+   Описание
+   -----------
+   Эта команда устанавливает программу "testprogram" на локальном компьютере.
+   
+ .Example
+   PS C:\> cat computers.txt | Install-Program -ProgSource appname
+
+   Описание
+   -----------
+   Эта команда устанавливает программу "appname" на компьютерах, указанных в файле "computers.txt".
+ 
+ .Example
+   PS C:\> "ComputerName, ProgSource
+   >> comp1, prog1
+   >> comp2, prog2 " | echo >install_apps.csv
+   >>
+   PS C:\> Import-Csv install_apps.csv | Install-Program
+
+   Описание
+   -----------
+   Эта команда устанавливает программы, указанные в файле "remove_apps.csv".
+     
+ .Link
+   http://techibee.com/powershell/powershell-uninstall-software-on-remote-computer/1400
+   
+ .Link
+   параметры NSIS http://nsis.sourceforge.net/Docs/Chapter3.html#3.2.1
+   
+#>
 function Install-Program() 
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername, 
 		
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
 		
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$InstallParams = "", 
 		
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$UseOnlyInstallParams
 	)
-	
-	$file = Get-Item $ProgSource
-	$params = ""
-	
-	$before_install_state = Get-Program -ComputerName $ComputerName
-	if( $file.Extension -ine ".msi") {
-		if(!$UseOnlyInstallParams) {
-			$params = "/S /silent /quiet /norestart /q /qn"
-		} 
-		&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams 2>$null
-	} else {
-		if(!$UseOnlyInstallParams) {
-			$params = "/quiet /norestart /qn"
+	begin {}
+	process {
+		
+		$file = Get-Item $ProgSource
+		$params = ""
+		
+		$before_install_state = Get-Program -ComputerName $ComputerName
+		if( $file.Extension -ine ".msi") {
+			if(!$UseOnlyInstallParams) {
+				$params = "/S /silent /quiet /norestart /q /qn"
+			} 
+			&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams 2>$null
+		} else {
+			if(!$UseOnlyInstallParams) {
+				$params = "/quiet /norestart /qn"
+			}
+			&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams 2>$null
 		}
-		&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams 2>$null
-	}
-	Sleep 2
-	$after_install_state = Get-Program -ComputerName $ComputerName
-	$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID)
-	
-	if ($diff) {
-		foreach( $i in $diff) {
+		Sleep 2
+		$after_install_state = Get-Program -ComputerName $ComputerName
+		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID)
+		
+		if ($diff) {
+			foreach( $i in $diff) {
+				$OutputObj = New-Object -TypeName PSobject             
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
+			
+				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
+				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
+				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
+				$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
+				$OutputObj
+			}
+		} else {
 			$OutputObj = New-Object -TypeName PSobject             
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
-		
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
 			$OutputObj
 		}
-	} else {
-		$OutputObj = New-Object -TypeName PSobject             
-		$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-		$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-		$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
-		$OutputObj
 	}
-	
+	end {}
 }
