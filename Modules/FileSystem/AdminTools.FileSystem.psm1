@@ -23,7 +23,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 	{
 		while ($indexes[$level] -ge $dirs[$level].Length)
 		{#конец папки, переходим на уровень ниже
-			if ($ShowProgress -and ($level -lt 4)) {
+			if ($ShowProgress -and ($level -lt 2)) {
 				Write-Progress -Id $level -activity "Вычисление размера" -status "Сканирование"  -Complete
 			}
 			$size = $sizes[$level]
@@ -59,7 +59,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 		
 		$file = $dirs[$level][ $indexes[$level] ]
 		
-		if ($ShowProgress -and ($dirs[$level].length -gt 0) -and ($level -lt 4)) {
+		if ($ShowProgress -and ($dirs[$level].length -gt 0) -and ($level -lt 2)) {
 			Write-Progress -Id $level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($sizes[$level] / 1MB))) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
 		}
 		
@@ -93,7 +93,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	$j = 0
 	foreach ($i in $dir)
 	{	
-		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 4)) {
+		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 2)) {
 			Write-Progress -Id $Level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($size / 1MB))) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
 		}
 		if ( $i.PSIsContainer ) {
@@ -107,7 +107,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 		}
 		$j++
 	}
-	if ($ShowProgress -and ($Level -lt 4)) {
+	if ($ShowProgress -and ($Level -lt 2)) {
 		Write-Progress -Id $Level -activity "Вычисление размера" -status "Сканирование"  -Complete
 	}
 	#$obj = New-Object -TypeName PSobject             
@@ -122,7 +122,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	return $list
 }
 # рекурсивное вычисление размера папки
-# $ShowProgress - отображать ход сканирования (до 4 уровней)
+# $ShowProgress - отображать ход сканирования (до 2 уровней)
 # 
 function Get-DiskUsageRecursive(
 	[string]$LiteralPath = ".", 
@@ -152,7 +152,7 @@ function Get-DiskUsageRecursive(
   Добавляет столбец Level, в нем указан уровень вложенности каталога.
   
  .Parameter ShowProgress
-  Отображает прогресс сканирования каталогов. Уровень сканирования не зависит от параметра Depth и равен 4.
+  Отображает прогресс сканирования каталогов. Уровень сканирования не зависит от параметра Depth и равен 2.
   
  .Parameter RecursiveAlgorithm
   Используется рекурсивный алгоритм для сканирования папок (в данном случае в вывод данные отдаются только после выполнения фукнции).
