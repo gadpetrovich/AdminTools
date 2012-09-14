@@ -315,13 +315,18 @@ function Install-Program()
 			if(!$UseOnlyInstallParams) {
 				$params = "/S /silent /quiet /norestart /q /qn"
 			} 
-			&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource $params $InstallParams 2>$null
+			#&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource "$params $InstallParams".Split() 2>$null
+			# возможное решение проблемы двойных кавычек в параметрах:
+			# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
+			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 		} else {
 			if(!$UseOnlyInstallParams) {
 				$params = "/quiet /norestart /qn"
 			}
-			&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource $params $InstallParams 2>$null
+			#&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource "$params $InstallParams".Split() 2>$null
+			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec /i `"$ProgSource`" $params $InstallParams"
 		}
+		&cmd /c "`"$_cmd`"" 2>$null
 		Sleep 2
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID)
