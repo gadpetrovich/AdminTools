@@ -107,6 +107,8 @@ function Get-Program
 						$OutputObj | Add-Member -MemberType NoteProperty -Name UninstallKey -Value $AppUninstall            
 						$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID            
 						$OutputObj# | Select ComputerName, DriveName            
+						
+						$AppDetails.Close()
 					}
 				}				
 			}            
