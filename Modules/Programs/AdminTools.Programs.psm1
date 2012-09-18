@@ -29,14 +29,14 @@
    Отобразит все программы на локальном компьютере.
    
  .Example
-   PS C:\> Get-Program comp01 ^p
+   PS C:\> Get-Program -ComputerName comp01 ^p
 
    Описание
    -----------
    Список программ на компьютере "comp01", название которых начинается с символа "p".
   
  .Example
-   PS C:\> Get-Program comp01 "prog1", "prog2"
+   PS C:\> Get-Program "prog1", "prog2" comp01 
    
    Описание
    -----------
@@ -56,13 +56,13 @@ function Get-Program
 {
 	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]            
-		[string[]]$ComputerName = $env:computername,
-		
-		[parameter(position=1,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
+		[parameter(position=0,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
 		[string[]]$AppName,
 		
-		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername,
+		
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
 		[string]$AppMatch = ""
 	)            
 
@@ -144,17 +144,17 @@ function Get-Program
   Text         - результат выполнения в текстовом виде
   
  .Notes
-  Удалить программу можно также с помощью Get-Program: (Get-Program kf-map09 7-zip).Uninstall()
+  Удалить программу можно также с помощью Get-Program: (Get-Program 7-zip computername).Uninstall()
   
  .Example
-   PS C:\> Get-Program -AppName testprogram | Uninstall-Program 
+   PS C:\> Get-Program testprogram | Uninstall-Program 
 
    Описание
    -----------
    Эта команда удаляет программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Get-Program -AppName appname | Uninstall-Program -Confirm
+   PS C:\> cat computers.txt | Get-Program appname | Uninstall-Program -Confirm
 
    Описание
    -----------
@@ -182,10 +182,10 @@ function Uninstall-Program
 {
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
-		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
+		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = $env:computername,
 		[switch]$Force
 	)          
 	
@@ -193,7 +193,7 @@ function Uninstall-Program
 	process {
 		try {
 			$returnvalue = -1
-			$app = Get-Program $ComputerName | ? { $_.AppGUID -eq $AppGUID }
+			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
@@ -273,7 +273,7 @@ function Uninstall-Program
    Эта команда устанавливает программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Install-Program -ProgSource appname
+   PS C:\> cat computers.txt | Install-Program appname
 
    Описание
    -----------
@@ -301,11 +301,11 @@ function Install-Program()
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[string]$ComputerName = $env:computername, 
-		
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
+		
+		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = $env:computername, 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$InstallParams = "", 
@@ -338,7 +338,7 @@ function Install-Program()
 		&cmd /c "`"$_cmd`"" 2>$null
 		Sleep 2
 		$after_install_state = Get-Program -ComputerName $ComputerName
-		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID)
+		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
 		
 		if ($diff) {
 			foreach( $i in $diff) {
