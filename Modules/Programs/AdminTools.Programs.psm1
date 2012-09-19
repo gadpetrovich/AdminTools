@@ -66,19 +66,17 @@ function Get-Program
 		[string]$AppMatch = ""
 	)            
 
-	begin {
-		$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
-		$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
-		if ($HKLM.OpenSubKey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall") -ne $null) {
-			$UninstallRegKeys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
-		}
-	}            
+	begin {}            
 
 	process {            
 		foreach($Computer in $ComputerName) {            
 			Write-Verbose "Working on $Computer"            
 			if(Test-Connection -ComputerName $Computer -Count 1 -ea 0) {            
-				
+				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
+				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+				if ($HKLM.OpenSubKey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall") -ne $null) {
+					$UninstallRegKeys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+				}
 				foreach ($UninstallRegKey in $UninstallRegKeys)
 				{
 					$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)            
@@ -110,7 +108,8 @@ function Get-Program
 						
 						$AppDetails.Close()
 					}
-				}				
+				}	
+				$HKLM.Close()
 			}            
 		}            
 	}            
