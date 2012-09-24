@@ -42,4 +42,4 @@ Remove-UserFromAdmin
 Алиасы
 ------
 *   join - Join-Object
-*   <strike> get - Select-Object </strike>
+*   <del> get - Select-Object </del>
