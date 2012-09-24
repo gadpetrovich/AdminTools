@@ -4,39 +4,41 @@
 
 Установка
 ---------
-Скопируте AdminTools в любой каталог, указанный в переменной $env:PSModulePath
+Скопируте AdminTools в любой каталог, указанный в переменной `$env:PSModulePath`
 
 Список модулей
 --------------
-*   FileSystem
 
-    Get-DiskUsage - Возращает список вложенных каталогов с их суммарными размерами.
-	
-    Update-DirLength - Обновляет список каталогов с их суммарными размерами.
-	
-    Update-Length - Преобразует параметр Length в читаемый вид. 
-	
-*   Programs
+### FileSystem
 
-    Get-Program - Возварщает список установленных программ.
-	
-	Uninstall-Program - Удаляет указанную программу.
-	
-	Install-Program - Устанавливает программу из указанного источника.
-	
-*   Test
+Get-DiskUsage - Возращает список вложенных каталогов с их суммарными размерами.
 
-    Get-OsInfo
-	
-	Get-NetObject
-	
-	Join-Object - Объединяет два списка в один.
-	
-*   UserAndGroups
+Update-DirLength - Обновляет список каталогов с их суммарными размерами.
 
-    Add-UserToAdmin
-	Remove-UserFromAdmin
+Update-Length - Преобразует параметр Length в читаемый вид. 
+
+### Programs
+
+Get-Program - Возварщает список установленных программ.
+
+Uninstall-Program - Удаляет указанную программу.
+
+Install-Program - Устанавливает программу из указанного источника.
+
+### Test
+
+Get-OsInfo
+
+Get-NetObject
+
+Join-Object - Объединяет два списка в один.
+
+### UserAndGroups
+
+Add-UserToAdmin
+
+Remove-UserFromAdmin
 
 Алиасы
 ------
-*    join - Join-Object
+*   join - Join-Object
