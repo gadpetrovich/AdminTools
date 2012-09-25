@@ -3,5 +3,5 @@
 }
 
 Set-Alias join		Join-Object
-
+Set-Alias get		Select-Object
 Export-ModuleMember -Alias * -Function * -Cmdlet *
