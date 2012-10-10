@@ -211,6 +211,8 @@ function Uninstall-Program
 					}
 					$returnvalue = $returnval.returnvalue
 					
+					Sleep 2
+					
 					#ждем, когда завершатся процессы удаления
 					while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
 				}
@@ -346,10 +348,11 @@ function Install-Program()
 		
 		&cmd /c "`"$_cmd`"" 2>$null
 		
+		Sleep 2
+		
 		#ждем, когда завершатся процессы установки
 		while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
 		
-		Sleep 2
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
 		
