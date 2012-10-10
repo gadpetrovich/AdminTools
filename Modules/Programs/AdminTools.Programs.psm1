@@ -196,6 +196,10 @@ function Uninstall-Program
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
+					#запоминаем список процессов msiexec перед удалением
+					&sc.exe \\$ComputerName start msiserver >$null
+					while(!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
+					
 					$uninstall_key = $app.UninstallKey
 					if( $uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
 					{    
@@ -206,6 +210,9 @@ function Uninstall-Program
 							"$uninstall_key /S /x /silent /uninstall /qn /quiet /norestart")
 					}
 					$returnvalue = $returnval.returnvalue
+					
+					#ждем, когда завершатся процессы удаления
+					while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
 				}
 			}
 		} catch {
@@ -318,12 +325,15 @@ function Install-Program()
 		$file = Get-Item $ProgSource
 		$params = ""
 		
+		#запоминаем список процессов msiexec перед установкой
+		&sc.exe \\$ComputerName start msiserver >$null
+		while(!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
+		
 		$before_install_state = Get-Program -ComputerName $ComputerName
 		if( $file.Extension -ine ".msi") {
 			if(!$UseOnlyInstallParams) {
 				$params = "/S /silent /quiet /norestart /q /qn"
 			} 
-			#&"$PSScriptRoot\..\..\Apps\psexec" -is \\$ComputerName $ProgSource "$params $InstallParams".Split() 2>$null
 			# возможное решение проблемы двойных кавычек в параметрах:
 			# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
@@ -331,10 +341,14 @@ function Install-Program()
 			if(!$UseOnlyInstallParams) {
 				$params = "/quiet /norestart /qn"
 			}
-			#&"$PSScriptRoot\..\..\Apps\psexec" -s \\$ComputerName msiexec /i $ProgSource "$params $InstallParams".Split() 2>$null
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec /i `"$ProgSource`" $params $InstallParams"
 		}
+		
 		&cmd /c "`"$_cmd`"" 2>$null
+		
+		#ждем, когда завершатся процессы установки
+		while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
+		
 		Sleep 2
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
