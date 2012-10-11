@@ -329,21 +329,28 @@ function Install-Program()
 		
 		#запоминаем список процессов msiexec перед установкой
 		&sc.exe \\$ComputerName start msiserver >$null
-		while(!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
+		while (!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
 		
 		$before_install_state = Get-Program -ComputerName $ComputerName
-		if( $file.Extension -ine ".msi") {
-			if(!$UseOnlyInstallParams) {
+		if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
+		{
+			if (!$UseOnlyInstallParams) {
+				$params = "/quiet /norestart /qn"
+			}
+			if ($file.Extension -ieq ".msi") {
+				$type_install = "/i"
+			} else {
+				$type_install = "/update"
+			}
+			
+			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $type_install `"$ProgSource`" $params $InstallParams"
+		} else {
+			if (!$UseOnlyInstallParams) {
 				$params = "/S /silent /quiet /norestart /q /qn"
 			} 
 			# возможное решение проблемы двойных кавычек в параметрах:
 			# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
-		} else {
-			if(!$UseOnlyInstallParams) {
-				$params = "/quiet /norestart /qn"
-			}
-			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec /i `"$ProgSource`" $params $InstallParams"
 		}
 		
 		&cmd /c "`"$_cmd`"" 2>$null
