@@ -196,9 +196,6 @@ function Uninstall-Program
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
-					#запоминаем список процессов msiexec перед удалением
-					&sc.exe \\$ComputerName start msiserver >$null
-					while(!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
 					
 					$uninstall_key = $app.UninstallKey
 					if( $uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
@@ -211,10 +208,9 @@ function Uninstall-Program
 					}
 					$returnvalue = $returnval.returnvalue
 					
-					Sleep 2
-					
 					#ждем, когда завершатся процессы удаления
-					while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
+					&sc.exe \\$ComputerName start msiserver >$null
+					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
 				}
 			}
 		} catch {
@@ -327,10 +323,6 @@ function Install-Program()
 		$file = Get-Item $ProgSource
 		$params = ""
 		
-		#запоминаем список процессов msiexec перед установкой
-		&sc.exe \\$ComputerName start msiserver >$null
-		while (!$before_msi) { $before_msi = Get-Process msiexec -ComputerName $ComputerName }
-		
 		$before_install_state = Get-Program -ComputerName $ComputerName
 		if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
 		{
@@ -358,7 +350,8 @@ function Install-Program()
 		Sleep 2
 		
 		#ждем, когда завершатся процессы установки
-		while (diff $before_msi (Get-Process msiexec -ComputerName $ComputerName)) { Sleep 2 }
+		&sc.exe \\$ComputerName start msiserver >$null
+		while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
 		
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
