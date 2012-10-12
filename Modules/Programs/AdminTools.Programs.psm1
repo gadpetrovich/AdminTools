@@ -69,9 +69,12 @@ function Get-Program
 	begin {}            
 
 	process {            
-		foreach($Computer in $ComputerName) {            
-			Write-Verbose "Working on $Computer"            
-			if(Test-Connection -ComputerName $Computer -Count 1 -ea 0) {            
+		try
+		{
+			foreach($Computer in $ComputerName) {            
+				Write-Verbose "Working on $Computer"            
+				if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { continue }
+				
 				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
 				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
 				if ($HKLM.OpenSubKey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall") -ne $null) {
@@ -111,7 +114,11 @@ function Get-Program
 				}	
 				$HKLM.Close()
 			}            
-		}            
+		} catch {
+			write-error "Review the error message"
+			$_
+			exit
+		}
 	}            
 
 	end {}
@@ -319,39 +326,45 @@ function Install-Program()
 	)
 	begin {}
 	process {
-		
-		$file = Get-Item $ProgSource
-		$params = ""
-		
-		$before_install_state = Get-Program -ComputerName $ComputerName
-		if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
-		{
-			if (!$UseOnlyInstallParams) {
-				$params = "/quiet /norestart /qn"
-			}
-			if ($file.Extension -ieq ".msi") {
-				$type_install = "/i"
+		try {
+			$file = Get-Item $ProgSource
+			$params = ""
+			
+			$before_install_state = Get-Program -ComputerName $ComputerName
+			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
+			{
+				if (!$UseOnlyInstallParams) {
+					$params = "/quiet /norestart /qn"
+				}
+				if ($file.Extension -ieq ".msi") {
+					$type_install = "/i"
+				} else {
+					$type_install = "/update"
+				}
+				
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $type_install `"$ProgSource`" $params $InstallParams"
 			} else {
-				$type_install = "/update"
+				if (!$UseOnlyInstallParams) {
+					$params = "/S /silent /quiet /norestart /q /qn"
+				} 
+				# возможное решение проблемы двойных кавычек в параметрах:
+				# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 			}
 			
-			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $type_install `"$ProgSource`" $params $InstallParams"
-		} else {
-			if (!$UseOnlyInstallParams) {
-				$params = "/S /silent /quiet /norestart /q /qn"
-			} 
-			# возможное решение проблемы двойных кавычек в параметрах:
-			# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
-			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
+			&cmd /c "`"$_cmd`"" 2>$null
+			
+			Sleep 2
+			
+			#ждем, когда завершатся процессы установки
+			&sc.exe \\$ComputerName start msiserver >$null
+			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
+			
+		} catch {
+			write-error "Review the error message"
+			$_
+			exit
 		}
-		
-		&cmd /c "`"$_cmd`"" 2>$null
-		
-		Sleep 2
-		
-		#ждем, когда завершатся процессы установки
-		&sc.exe \\$ComputerName start msiserver >$null
-		while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
 		
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
