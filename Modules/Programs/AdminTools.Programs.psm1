@@ -337,12 +337,12 @@ function Install-Program()
 					$params = "/quiet /norestart /qn"
 				}
 				if ($file.Extension -ieq ".msi") {
-					$type_install = "/i"
+					$install_type = "/i"
 				} else {
-					$type_install = "/update"
+					$install_type = "/update"
 				}
 				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $type_install `"$ProgSource`" $params $InstallParams"
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $install_type `"$ProgSource`" $params $InstallParams"
 			} else {
 				if (!$UseOnlyInstallParams) {
 					$params = "/S /silent /quiet /norestart /q /qn"
