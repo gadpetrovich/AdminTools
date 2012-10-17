@@ -1,5 +1,5 @@
 ﻿# требуется для работы start-removeservice и stop-removeservice
-$null = [System.Reflection.Assembly]::Load("System.ServiceProcess, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
+$null = [System.Reflection.Assembly]::LoadWithPartialName("System.ServiceProcess")
 
 
 # $null | Skip-Null | % { ... } 
