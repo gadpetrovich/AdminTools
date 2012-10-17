@@ -115,9 +115,7 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			write-error "Review the error message"
-			$_
-			exit
+			Write-Error $_
 		}
 	}            
 
@@ -205,14 +203,15 @@ function Uninstall-Program
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
 					
 					$uninstall_key = $app.UninstallKey
-					if( $uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
+					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
 					{    
-						$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create("msiexec `/x$AppGUID `/qn")
+						$_cmd = "msiexec /x `"$AppGUID`" /qn"
 					} else {
 						# сложный случай - не msi-пакет
-						$returnval = ([WMICLASS]"\\$ComputerName\ROOT\CIMV2:win32_process").Create(
-							"$uninstall_key /S /x /silent /uninstall /qn /quiet /norestart")
+						$_cmd = "$uninstall_key /S /x /silent /uninstall /qn /quiet /norestart"
 					}
+					Write-Verbose $_cmd
+					$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create($_cmd)
 					$returnvalue = $returnval.returnvalue
 					
 					#ждем, когда завершатся процессы удаления
@@ -221,9 +220,7 @@ function Uninstall-Program
 				}
 			}
 		} catch {
-			write-error "Failed to trigger the uninstallation. Review the error message"
-			$_
-			exit
+			Write-Error $_
 		}
 		switch ($($returnvalue)){
 			-1 { $txt = "Canceled" }
@@ -351,7 +348,7 @@ function Install-Program()
 				# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 			}
-			
+			Write-Verbose $_cmd            
 			&cmd /c "`"$_cmd`"" 2>$null
 			
 			Sleep 2
@@ -361,9 +358,7 @@ function Install-Program()
 			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
 			
 		} catch {
-			write-error "Review the error message"
-			$_
-			exit
+			Write-Error $_
 		}
 		
 		$after_install_state = Get-Program -ComputerName $ComputerName
