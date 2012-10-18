@@ -44,7 +44,17 @@ function Get-NetObject([string]$Match)
 	}
 }
 
-
+function  Format-TableAuto { 
+	begin {
+		$list = @()
+	}
+	process { 
+		$list += $_ 
+	}
+	end {
+		$list | ft -a 
+	}
+}
 
 <# 
  .Synopsis
