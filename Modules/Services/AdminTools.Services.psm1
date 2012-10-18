@@ -1,51 +1,51 @@
-# требуется для работы start-removeservice и stop-removeservice
+п»ї# С‚СЂРµР±СѓРµС‚СЃСЏ РґР»СЏ СЂР°Р±РѕС‚С‹ start-removeservice Рё stop-removeservice
 $null = [System.Reflection.Assembly]::LoadWithPartialName("System.ServiceProcess")
 
 
 <# 
  .Synopsis
-  Запускает службы на удаленном компьютере.
+  Р—Р°РїСѓСЃРєР°РµС‚ СЃР»СѓР¶Р±С‹ РЅР° СѓРґР°Р»РµРЅРЅРѕРј РєРѕРјРїСЊСЋС‚РµСЂРµ.
 
  .Description
-  Функция Start-RemoteService запускает службы на удаленных компьютерах с помощью утилиты sc.exe. Если служба уже запущена, выдается предупреждение и команда игнорируется. 
+  Р¤СѓРЅРєС†РёСЏ Start-RemoteService Р·Р°РїСѓСЃРєР°РµС‚ СЃР»СѓР¶Р±С‹ РЅР° СѓРґР°Р»РµРЅРЅС‹С… РєРѕРјРїСЊСЋС‚РµСЂР°С… СЃ РїРѕРјРѕС‰СЊСЋ СѓС‚РёР»РёС‚С‹ sc.exe. Р•СЃР»Рё СЃР»СѓР¶Р±Р° СѓР¶Рµ Р·Р°РїСѓС‰РµРЅР°, РІС‹РґР°РµС‚СЃСЏ РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ Рё РєРѕРјР°РЅРґР° РёРіРЅРѕСЂРёСЂСѓРµС‚СЃСЏ. 
  
  .Parameter ComputerName
-  Компьютер, на котором требуется запустить службу. Может использоваться для перадачи объектов по конвейеру.
+  РљРѕРјРїСЊСЋС‚РµСЂ, РЅР° РєРѕС‚РѕСЂРѕРј С‚СЂРµР±СѓРµС‚СЃСЏ Р·Р°РїСѓСЃС‚РёС‚СЊ СЃР»СѓР¶Р±Сѓ. РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂР°РґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
  
  .Parameter Name
-  Имя запускаемой службы. Требуется указать точное имя службы (не допускается использование отображаемых имен). Может использоваться для перадачи объектов по конвейеру.
+  РРјСЏ Р·Р°РїСѓСЃРєР°РµРјРѕР№ СЃР»СѓР¶Р±С‹. РўСЂРµР±СѓРµС‚СЃСЏ СѓРєР°Р·Р°С‚СЊ РёРјСЏ СЃР»СѓР¶Р±С‹ (РЅРµ РґРѕРїСѓСЃРєР°РµС‚СЃСЏ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹С… РёРјРµРЅ). РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂР°РґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
 
  .Parameter InputObject
-  Задает объекты ServiceController, представляющие запускаемые службы. Введите переменную, содержащую объекты, либо команду или выражение для получения объектов.
+  Р—Р°РґР°РµС‚ РѕР±СЉРµРєС‚С‹ ServiceController, РїСЂРµРґСЃС‚Р°РІР»СЏСЋС‰РёРµ Р·Р°РїСѓСЃРєР°РµРјС‹Рµ СЃР»СѓР¶Р±С‹. Р’РІРµРґРёС‚Рµ РїРµСЂРµРјРµРЅРЅСѓСЋ, СЃРѕРґРµСЂР¶Р°С‰СѓСЋ РѕР±СЉРµРєС‚С‹, Р»РёР±Рѕ РєРѕРјР°РЅРґСѓ РёР»Рё РІС‹СЂР°Р¶РµРЅРёРµ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РѕР±СЉРµРєС‚РѕРІ.
   
  .Outputs
-  Возвращаемые поля:
-  ComputerName - имя компьютера
-  Name         - имя службы
-  Status       - результат выполнения функции
+  Р’РѕР·РІСЂР°С‰Р°РµРјС‹Рµ РїРѕР»СЏ:
+  ComputerName - РёРјСЏ РєРѕРјРїСЊСЋС‚РµСЂР°
+  Name         - РёРјСЏ СЃР»СѓР¶Р±С‹
+  Status       - СЂРµР·СѓР»СЊС‚Р°С‚ РІС‹РїРѕР»РЅРµРЅРёСЏ С„СѓРЅРєС†РёРё
   
  .Example
    PS C:\> start-remoteservice -name msiserver -computername pc-remote
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Эта команда запускает службу "msiserver" на компьютере "pc-remote".
+   Р­С‚Р° РєРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР°РµС‚ СЃР»СѓР¶Р±Сѓ "msiserver" РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote".
    
  .Example
    PS C:\> $a = get-service servicename -ComputerName pc-remote 
    
    PS C:\> start-remoteservice -InputObject $a
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Приведенные команды запускают на компьютере "pc-remote" службу "servicename".
+   РџСЂРёРІРµРґРµРЅРЅС‹Рµ РєРѕРјР°РЅРґС‹ Р·Р°РїСѓСЃРєР°СЋС‚ РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote" СЃР»СѓР¶Р±Сѓ "servicename".
  
  .Example
    PS C:\> $a = get-service servicename -ComputerName pc-remote | start-remoteservice 
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Приведенные команды запускают на компьютере "pc-remote" службу "servicename".  
+   РџСЂРёРІРµРґРµРЅРЅС‹Рµ РєРѕРјР°РЅРґС‹ Р·Р°РїСѓСЃРєР°СЋС‚ РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote" СЃР»СѓР¶Р±Сѓ "servicename".  
  
  .Link
 	Get-Service
@@ -70,51 +70,53 @@ function Start-RemoteService
 	process{
 		function func([string]$service, [string]$computer)
 		{
-			$status = &sc.exe \\$computer query $service
-			if ($status.Length -lt 5) {
-				throw "Неправильное имя сервиса: $service"
+			$status = @(Get-Service -ComputerName $computer -Name $service)
+			if ($status.Length -lt 1) {
+				throw "РќРµРїСЂР°РІРёР»СЊРЅРѕРµ РёРјСЏ СЃРµСЂРІРёСЃР°: $service"
 			}
-			
-			$result = "Cancelled"
-			if ($status[3] -ilike "*running*") {
-				Write-Warning "Сервис $service уже запущен"
-				$result = "RUNNING"
-			} else {							
-				if ($pscmdlet.ShouldProcess("$service на компьютере $computer")) {
-					$respond = &sc.exe \\$computer start $service
-					if ($respond.Length -lt 5) {
-						$result = "Error"
-						Write-Error "Не удалось запустить службу"
-					} elseif ($respond[3] -ilike "*START_PENDING*" -or $respond[3] -ilike "*running*") {
-						$result = "START_PENDING"
+			foreach($s in $status)
+			{
+				$result = "Cancelled"
+				if ($s.Status -eq "Running") {
+					Write-Warning ("РЎРµСЂРІРёСЃ " + $s.Name + " СѓР¶Рµ Р·Р°РїСѓС‰РµРЅ")
+					$result = "Running"
+				} else {							
+					if ($pscmdlet.ShouldProcess(($s.Name + " РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ $computer"))) {
+						try {
+							$s.Start()
+							$respond = Get-Service -ComputerName $computer -Name $s.Name
+							$result = $respond.Status
+						} catch {
+							Write-Error ("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ СЃР»СѓР¶Р±Сѓ: " + $_)
+						}
 					}
 				}
+				$OutputObj = New-Object -TypeName PSobject             
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
+				$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
+				$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
+				$OutputObj
 			}
-			$OutputObj = New-Object -TypeName PSobject             
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
-			$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $service
-			$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
-			$OutputObj
 		}
 		try {
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
 				"ServiceControllers" { 
 					foreach ($i in $InputObject) {
-						Write-Verbose ("Компьютер " + $i.MachineName)
-		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
+						Write-Verbose ("РљРѕРјРїСЊСЋС‚РµСЂ " + $i.MachineName)
+		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "РљРѕРјРїСЊСЋС‚РµСЂ " + $i.MachineName + " РЅРµРґРѕСЃС‚СѓРїРµРЅ"}
 		                		                
                         func $i.ServiceName $i.MachineName
 					}
 				} 
 				"Normal" { 
 					foreach($computer in $ComputerName) {
-                        Write-Verbose "Компьютер $Computer"            
-		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
+                        Write-Verbose "РљРѕРјРїСЊСЋС‚РµСЂ $Computer"            
+		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "РљРѕРјРїСЊСЋС‚РµСЂ $computer РЅРµРґРѕСЃС‚СѓРїРµРЅ"}
 		                			
 						foreach($service in $Name) {
                             if ($service -eq "" -or $service -eq $null) {
-                				throw "Не указано имя сервиса"
+                				throw "РќРµ СѓРєР°Р·Р°РЅРѕ РёРјСЏ СЃРµСЂРІРёСЃР°"
                 			}
 							func $service $computer
 						}
@@ -133,48 +135,48 @@ function Start-RemoteService
 
 <# 
  .Synopsis
-  Останавливает службы на удаленном компьютере.
+  РћСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЃР»СѓР¶Р±С‹ РЅР° СѓРґР°Р»РµРЅРЅРѕРј РєРѕРјРїСЊСЋС‚РµСЂРµ.
 
  .Description
-  Функция Stop-RemoteService останавливает службы на удаленных компьютерах с помощью утилиты sc.exe. Если служба уже остановлена, выдается предупреждение и команда игнорируется. 
+  Р¤СѓРЅРєС†РёСЏ Stop-RemoteService РѕСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЃР»СѓР¶Р±С‹ РЅР° СѓРґР°Р»РµРЅРЅС‹С… РєРѕРјРїСЊСЋС‚РµСЂР°С… СЃ РїРѕРјРѕС‰СЊСЋ СѓС‚РёР»РёС‚С‹ sc.exe. Р•СЃР»Рё СЃР»СѓР¶Р±Р° СѓР¶Рµ РѕСЃС‚Р°РЅРѕРІР»РµРЅР°, РІС‹РґР°РµС‚СЃСЏ РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ Рё РєРѕРјР°РЅРґР° РёРіРЅРѕСЂРёСЂСѓРµС‚СЃСЏ. 
  
  .Parameter ComputerName
-  Компьютер, на котором требуется остановить службу. Может использоваться для перадачи объектов по конвейеру.
+  РљРѕРјРїСЊСЋС‚РµСЂ, РЅР° РєРѕС‚РѕСЂРѕРј С‚СЂРµР±СѓРµС‚СЃСЏ РѕСЃС‚Р°РЅРѕРІРёС‚СЊ СЃР»СѓР¶Р±Сѓ. РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂР°РґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
  
  .Parameter Name
-  Имя останавливаемой службы. Требуется указать точное имя службы (не допускается использование отображаемых имен). Может использоваться для перадачи объектов по конвейеру.
+  РРјСЏ РѕСЃС‚Р°РЅР°РІР»РёРІР°РµРјРѕР№ СЃР»СѓР¶Р±С‹. РўСЂРµР±СѓРµС‚СЃСЏ СѓРєР°Р·Р°С‚СЊ РёРјСЏ СЃР»СѓР¶Р±С‹ (РЅРµ РґРѕРїСѓСЃРєР°РµС‚СЃСЏ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹С… РёРјРµРЅ). РњРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РїРµСЂР°РґР°С‡Рё РѕР±СЉРµРєС‚РѕРІ РїРѕ РєРѕРЅРІРµР№РµСЂСѓ.
 
  .Parameter InputObject
-  Задает объекты ServiceController, представляющие останавливаемые службы. Введите переменную, содержащую объекты, либо команду или выражение для получения объектов.
+  Р—Р°РґР°РµС‚ РѕР±СЉРµРєС‚С‹ ServiceController, РїСЂРµРґСЃС‚Р°РІР»СЏСЋС‰РёРµ РѕСЃС‚Р°РЅР°РІР»РёРІР°РµРјС‹Рµ СЃР»СѓР¶Р±С‹. Р’РІРµРґРёС‚Рµ РїРµСЂРµРјРµРЅРЅСѓСЋ, СЃРѕРґРµСЂР¶Р°С‰СѓСЋ РѕР±СЉРµРєС‚С‹, Р»РёР±Рѕ РєРѕРјР°РЅРґСѓ РёР»Рё РІС‹СЂР°Р¶РµРЅРёРµ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РѕР±СЉРµРєС‚РѕРІ.
   
  .Outputs
-  Возвращаемые поля:
-  ComputerName - имя компьютера
-  Name         - имя службы
-  Status       - результат выполнения функции
+  Р’РѕР·РІСЂР°С‰Р°РµРјС‹Рµ РїРѕР»СЏ:
+  ComputerName - РёРјСЏ РєРѕРјРїСЊСЋС‚РµСЂР°
+  Name         - РёРјСЏ СЃР»СѓР¶Р±С‹
+  Status       - СЂРµР·СѓР»СЊС‚Р°С‚ РІС‹РїРѕР»РЅРµРЅРёСЏ С„СѓРЅРєС†РёРё
   
  .Example
    PS C:\> stop-remoteservice -name msiserver -computername pc-remote
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Эта команда останавливает службу "msiserver" на компьютере "pc-remote".
+   Р­С‚Р° РєРѕРјР°РЅРґР° РѕСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЃР»СѓР¶Р±Сѓ "msiserver" РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote".
    
  .Example
    PS C:\> $a = get-service servicename -ComputerName pc-remote 
    
    PS C:\> stop-remoteservice -InputObject $a
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Приведенные команды останавливают на компьютере "pc-remote" службу "servicename".
+   РџСЂРёРІРµРґРµРЅРЅС‹Рµ РєРѕРјР°РЅРґС‹ РѕСЃС‚Р°РЅР°РІР»РёРІР°СЋС‚ РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote" СЃР»СѓР¶Р±Сѓ "servicename".
  
  .Example
    PS C:\> $a = get-service servicename -ComputerName pc-remote | start-remoteservice 
 
-   Описание
+   РћРїРёСЃР°РЅРёРµ
    -----------
-   Приведенные команды останавливают на компьютере "pc-remote" службу "servicename".  
+   РџСЂРёРІРµРґРµРЅРЅС‹Рµ РєРѕРјР°РЅРґС‹ РѕСЃС‚Р°РЅР°РІР»РёРІР°СЋС‚ РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ "pc-remote" СЃР»СѓР¶Р±Сѓ "servicename".  
   
  .Link
 	Get-Service
@@ -198,31 +200,33 @@ function Stop-RemoteService
 	process{
 		function func([string]$service, [string]$computer)
 		{
-			$status = &sc.exe \\$computer query $service
-			if ($status.Length -lt 5) {
-				throw "Неправильное имя сервиса: $service"
+			$status = @(Get-Service -ComputerName $computer -Name $service)
+			if ($status.Length -lt 1) {
+				throw "РќРµРїСЂР°РІРёР»СЊРЅРѕРµ РёРјСЏ СЃРµСЂРІРёСЃР°: $service"
 			}
-			
-			$result = "Cancelled"
-			if ($status[3] -ilike "*stopped*") {
-				Write-Warning "Сервис $service уже остановлен"
-				$result = "STOPPED"
-			} else {							
-				if ($pscmdlet.ShouldProcess("$service на компьютере $computer")) {						
-					$respond = &sc.exe \\$computer stop $service
-					if ($respond.Length -lt 5) {
-						$result = "Error"
-						Write-Error "Не удалось остановить службу"
-					} elseif ($respond[3] -ilike "*STOP_PENDING*" -or $respond[3] -ilike "*STOPPED*") {
-						$result = "STOP_PENDING"
-					} 
+			foreach($s in $status)
+			{
+				$result = "Cancelled"
+				if ($s.Status -eq "Stopped") {
+					Write-Warning ("РЎРµСЂРІРёСЃ " + $s.Name + " СѓР¶Рµ РѕСЃС‚Р°РЅРѕРІР»РµРЅ")
+					$result = "Stopped"
+				} else {							
+					if ($pscmdlet.ShouldProcess(($s.Name + " РЅР° РєРѕРјРїСЊСЋС‚РµСЂРµ $computer"))) {	
+						try { 
+							$a.Stop() 
+							$respond = Get-Service -ComputerName $computer -Name $s.Name
+							$result = $respond.Status
+						} catch {
+							Write-Error ("РќРµ СѓРґР°Р»РѕСЃСЊ РѕСЃС‚Р°РЅРѕРІРёС‚СЊ СЃР»СѓР¶Р±Сѓ: " + $_)
+						}
+					}
 				}
+				$OutputObj = New-Object -TypeName PSobject             
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
+				$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
+				$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
+				$OutputObj
 			}
-			$OutputObj = New-Object -TypeName PSobject             
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
-			$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $service
-			$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
-			$OutputObj
 		}
 		
 		try {
@@ -230,20 +234,20 @@ function Stop-RemoteService
 			{ 
 				"ServiceControllers" { 
 					foreach ($i in $InputObject) {
-						Write-Verbose ("Компьютер " + $i.MachineName)
-		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
+						Write-Verbose ("РљРѕРјРїСЊСЋС‚РµСЂ " + $i.MachineName)
+		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "РљРѕРјРїСЊСЋС‚РµСЂ " + $i.MachineName + " РЅРµРґРѕСЃС‚СѓРїРµРЅ"}
 		                
                         func $i.ServiceName $i.MachineName
 					}
 				} 
 				"Normal" { 
 					foreach($computer in $ComputerName) {
-                        Write-Verbose "Компьютер $Computer"            
-		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
+                        Write-Verbose "РљРѕРјРїСЊСЋС‚РµСЂ $Computer"            
+		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "РљРѕРјРїСЊСЋС‚РµСЂ $computer РЅРµРґРѕСЃС‚СѓРїРµРЅ"}
 		                			
 						foreach($service in $Name) {
                             if ($service -eq "" -or $service -eq $null) {
-                				throw "Не указано имя сервиса"
+                				throw "РќРµ СѓРєР°Р·Р°РЅРѕ РёРјСЏ СЃРµСЂРІРёСЃР°"
                 			}
 							func $service $computer
 						}
