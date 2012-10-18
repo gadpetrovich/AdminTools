@@ -146,6 +146,7 @@ function Get-Program
   AppGUID      - GUID приложения
   ReturnValue  - результат выполнения
   Text         - результат выполнения в текстовом виде
+  EventMessage - сообщение от MsiInstaller'а
   
  .Notes
   Удалить программу можно также с помощью Get-Program: (Get-Program 7-zip computername).Uninstall()
@@ -201,7 +202,7 @@ function Uninstall-Program
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
-					
+					$before_uninstall_date = Get-Date
 					$uninstall_key = $app.UninstallKey
 					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
 					{    
@@ -231,12 +232,17 @@ function Uninstall-Program
 			9 { $txt = "Path Not Found" }
 			21 { $txt = "Invalid Parameter"}
 		}
-		$OutputObj = New-Object -TypeName PSobject             
+		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
+		$event_message = @()
+		foreach($i in $events) { $event_message += $i.message }
+		
+		$OutputObj = New-Object -TypeName PSobject     
 		$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
 		$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID
 		$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $appName
 		$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $returnvalue
 		$OutputObj | Add-Member -MemberType NoteProperty -Name Text -Value $txt
+		$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
 		$OutputObj
 		
 	}
@@ -272,6 +278,7 @@ function Uninstall-Program
   AppGUID      - GUID приложения
   AppVendor    - вендор
   ReturnValue  - результат выполнения
+  EventMessage - сообщение от MsiInstaller'а
   
  .Example
    PS C:\> Install-Program testprogram
@@ -327,6 +334,7 @@ function Install-Program()
 			$file = Get-Item $ProgSource
 			$params = ""
 			
+			$before_install_date = Get-Date
 			$before_install_state = Get-Program -ComputerName $ComputerName
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
 			{
@@ -351,7 +359,7 @@ function Install-Program()
 			Write-Verbose $_cmd            
 			&cmd /c "`"$_cmd`"" 2>$null
 			
-			Sleep 2
+			$exit_code = $LastExitCode
 			
 			#ждем, когда завершатся процессы установки
 			&sc.exe \\$ComputerName start msiserver >$null
@@ -364,13 +372,18 @@ function Install-Program()
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
 		
+		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date)
+		$event_message = @()
+		foreach($i in $events) { $event_message += $i.message }
+			
 		if ($diff) {
 			foreach( $i in $diff) {
 				$OutputObj = New-Object -TypeName PSobject             
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
-			
+				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
+				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+				
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
@@ -381,7 +394,8 @@ function Install-Program()
 			$OutputObj = New-Object -TypeName PSobject             
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $LastExitCode
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
+			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
 			$OutputObj
 		}
 	}
