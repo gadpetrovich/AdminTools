@@ -25,6 +25,12 @@ Uninstall-Program - Удаляет указанную программу.
 
 Install-Program - Устанавливает программу из указанного источника.
 
+### Services
+
+Start-RemoteService - Запускает службы на удаленном компьютере.
+
+Stop-RemoteService - Останавливает службы на удаленном компьютере.
+
 ### Test
 
 Get-OsInfo
@@ -43,3 +49,5 @@ Remove-UserFromAdmin
 ------
 *   join - Join-Object
 *   get - Select-Object
+*   Add-Program - Install-Program
+*   Remove-Program - Uninstall-Program

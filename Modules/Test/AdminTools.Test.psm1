@@ -94,11 +94,7 @@ function Get-NetObject([string]$Match)
  
  .Link
 	Get-Service
-	
- .Link
 	Start-Service
-
- .Link
 	Stop-RemoteService
 	
 #>
@@ -227,11 +223,7 @@ function Start-RemoteService
   
  .Link
 	Get-Service
-	
- .Link
 	Stop-Service
-
- .Link
 	Start-RemoteService
 #>
 function Stop-RemoteService
