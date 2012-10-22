@@ -30,6 +30,103 @@ function Get-OsInfo
 	end {}
 }
 
+function Get-ComputerInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername            
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			get-wmiobject -Class Win32_ComputerSystem -ComputerName $comp
+		}
+	}
+	end {}
+}
+
+function Get-BiosInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername            
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			get-wmiobject -Class Win32_Bios -ComputerName $comp
+		}
+	}
+	end {}
+}
+
+
+function Get-LogicalDiskInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername,
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string]$DeviceID = ""
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			if (![String]::IsNullOrEmpty($DeviceID)) {
+				get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp -Filter "DeviceID = '$DeviceID'"
+			} else {
+				get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp
+			}
+		}
+	}
+	end {}
+}
+
+
+function Get-DiskPartitionInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername,           
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string]$Filter = ""
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			get-wmiobject -Class Win32_DiskPartition -ComputerName $comp -Filter "$Filter"
+		}
+	}
+	end {}
+}
+
+
+function Get-DiskDriveInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			get-wmiobject -Class Win32_DiskDrive -ComputerName $comp
+		}
+	}
+	end {}
+}
+
+
 
 function Get-NetObject([string]$Match)
 {
