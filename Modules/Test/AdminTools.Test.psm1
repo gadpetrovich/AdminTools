@@ -149,7 +149,7 @@ function  Format-TableAuto {
 		$list += $_ 
 	}
 	end {
-		$list | ft -a 
+		$list | ft -a -Wrap
 	}
 }
 
