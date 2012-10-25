@@ -197,6 +197,12 @@ function Uninstall-Program
 	begin {}
 	process {
 		try {
+			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
+			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
+			{ 
+				throw "Для удаления приложения требуются права администратора"
+			}
+
 			$returnvalue = -1
 			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
 			$appName = $app.AppName
@@ -215,9 +221,10 @@ function Uninstall-Program
 					$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create($_cmd)
 					$returnvalue = $returnval.returnvalue
 					
-					#ждем, когда завершатся процессы удаления
-					&sc.exe \\$ComputerName start msiserver >$null
-					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
+					Write-Verbose "Ждем, когда завершатся процессы удаления"
+					$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+					if ($msiserver.Status -ne "Running") { $msiserver.Start() }
+					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
 				}
 			}
 		} catch {
@@ -232,6 +239,7 @@ function Uninstall-Program
 			9 { $txt = "Path Not Found" }
 			21 { $txt = "Invalid Parameter"}
 		}
+		Write-Verbose "Получаем список событий, связанных с удалением"
 		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
 		$event_message = @()
 		foreach($i in $events) { $event_message += $i.message }
@@ -279,6 +287,7 @@ function Uninstall-Program
   AppVendor    - вендор
   ReturnValue  - результат выполнения
   EventMessage - сообщение от MsiInstaller'а
+  OutputData   - текст, выводимый установщиком в стандартный поток вывода 
   
  .Example
    PS C:\> Install-Program testprogram
@@ -331,6 +340,14 @@ function Install-Program()
 	begin {}
 	process {
 		try {
+			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
+			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
+			{ 
+				throw "Для установки приложения требуются права администратора"
+			}
+		
+			$temp_file = [System.IO.Path]::GetTempFileName()
+			
 			$file = Get-Item $ProgSource
 			$params = ""
 			
@@ -352,30 +369,31 @@ function Install-Program()
 				if (!$UseOnlyInstallParams) {
 					$params = "/S /silent /quiet /norestart /q /qn"
 				} 
-				# возможное решение проблемы двойных кавычек в параметрах:
-				# http://stackoverflow.com/questions/6471320/how-to-call-cmd-exe-from-powershell-with-a-space-in-the-specified-commands-dire
+				
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 			}
-			Write-Verbose $_cmd            
-			&cmd /c "`"$_cmd`"" 2>$null
-			
+			Write-Verbose $_cmd
+			&cmd /c "`"$_cmd`"" 2>$null 1>$temp_file
 			$exit_code = $LastExitCode
 			
-			#ждем, когда завершатся процессы установки
-			&sc.exe \\$ComputerName start msiserver >$null
-			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -ne 1){ Sleep 2 }
+			Write-Verbose "Ждем, когда завершатся процессы установки"
+			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+			if ($msiserver.Status -ne "Running") { $msiserver.Start() }
+			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
 			
 		} catch {
 			Write-Error $_
 		}
 		
+		Write-Verbose "Получаем список программ"
 		$after_install_state = Get-Program -ComputerName $ComputerName
 		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
 		
+		Write-Verbose "Получаем список событий, связанных с установкой"
 		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date)
 		$event_message = @()
 		foreach($i in $events) { $event_message += $i.message }
-			
+		
 		if ($diff) {
 			foreach( $i in $diff) {
 				$OutputObj = New-Object -TypeName PSobject             
@@ -383,6 +401,7 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $temp_file
 				
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
@@ -396,6 +415,7 @@ function Install-Program()
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $temp_file
 			$OutputObj
 		}
 	}
