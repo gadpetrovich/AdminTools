@@ -280,15 +280,20 @@ function Update-Length
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
 		[parameter(position=0)]
-		[string]$NumericParameter = "Length",
+		[string[]]$NumericParameter = "Length",
 		[parameter(position=1)]
-		[string]$NewParameter = $NumericParameter
+		[string[]]$NewParameter = $NumericParameter
 	)  
 	
 	begin{}
 	process {
+		if ($NewParameter.Length -ne $NumericParameter.Length) {
+			throw "Несоответствие количества параметров NumericParameter и NewParameter"
+		}
 		foreach($i in $InputObject) {      
-			$i | Add-Member -MemberType NoteProperty -Name $NewParameter -Value ("{0:N3} MB" -f ($i.$NumericParameter / 1MB)) -force
+			for([int]$j = 0; $j -lt $NumericParameter.Length; $j++) {
+				$i | Add-Member -MemberType NoteProperty -Name ($NewParameter[$j]) -Value ("{0:N3} MB" -f ($i.($NumericParameter[$j]) / 1MB)) -force
+			}
 			$i
 		}
 	}
