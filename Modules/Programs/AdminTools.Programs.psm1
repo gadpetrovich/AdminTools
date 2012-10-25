@@ -401,7 +401,7 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $temp_file
+				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
 				
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
@@ -415,9 +415,11 @@ function Install-Program()
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $temp_file
+			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
 			$OutputObj
 		}
+		rm -Force $temp_file -ErrorAction SilentlyContinue
 	}
+	
 	end {}
 }
