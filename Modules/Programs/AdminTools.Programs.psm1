@@ -227,6 +227,11 @@ function Uninstall-Program
 					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
 				}
 			}
+			
+			Write-Verbose "Получаем список событий, связанных с удалением"
+			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
+			$event_message = @()
+			foreach($i in $events) { $event_message += $i.message }
 		} catch {
 			Write-Error $_
 		}
@@ -239,10 +244,7 @@ function Uninstall-Program
 			9 { $txt = "Path Not Found" }
 			21 { $txt = "Invalid Parameter"}
 		}
-		Write-Verbose "Получаем список событий, связанных с удалением"
-		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
-		$event_message = @()
-		foreach($i in $events) { $event_message += $i.message }
+		
 		
 		$OutputObj = New-Object -TypeName PSobject     
 		$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
@@ -340,14 +342,14 @@ function Install-Program()
 	begin {}
 	process {
 		try {
+			$temp_file = [System.IO.Path]::GetTempFileName()
+			
 			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
 			{ 
 				throw "Для установки приложения требуются права администратора"
 			}
 		
-			$temp_file = [System.IO.Path]::GetTempFileName()
-			
 			$file = Get-Item $ProgSource
 			$params = ""
 			
@@ -380,19 +382,21 @@ function Install-Program()
 			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
 			if ($msiserver.Status -ne "Running") { $msiserver.Start() }
 			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
+		
+			Write-Verbose "Получаем список программ"
+			$after_install_state = Get-Program -ComputerName $ComputerName
+			$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
+			
+			Write-Verbose "Получаем список событий, связанных с установкой"
+			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date)
+			$event_message = @()
+			foreach($i in $events) { $event_message += $i.message }
 			
 		} catch {
+			$exit_code = -1
 			Write-Error $_
 		}
 		
-		Write-Verbose "Получаем список программ"
-		$after_install_state = Get-Program -ComputerName $ComputerName
-		$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
-		
-		Write-Verbose "Получаем список событий, связанных с установкой"
-		$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date)
-		$event_message = @()
-		foreach($i in $events) { $event_message += $i.message }
 		
 		if ($diff) {
 			foreach( $i in $diff) {
@@ -401,7 +405,9 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
+				if (Test-Path $temp_file) {
+					$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
+				}
 				
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
@@ -415,7 +421,10 @@ function Install-Program()
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
+			if (Test-Path $temp_file) {
+				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
+			}
+			
 			$OutputObj
 		}
 		rm -Force $temp_file -ErrorAction SilentlyContinue
