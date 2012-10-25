@@ -279,7 +279,9 @@ function Update-Length
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
+		[parameter(position=0)]
 		[string]$NumericParameter = "Length",
+		[parameter(position=1)]
 		[string]$NewParameter = $NumericParameter
 	)  
 	

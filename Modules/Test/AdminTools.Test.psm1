@@ -24,7 +24,9 @@ function Get-OsInfo
 	process {
 		foreach ($comp in $ComputerName)
 		{
-			get-wmiobject -Class Win32_OperatingSystem -ComputerName $comp
+			$obj = get-wmiobject -Class Win32_OperatingSystem -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
@@ -41,7 +43,9 @@ function Get-ComputerInfo
 	process {
 		foreach ($comp in $ComputerName)
 		{
-			get-wmiobject -Class Win32_ComputerSystem -ComputerName $comp
+			$obj = get-wmiobject -Class Win32_ComputerSystem -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
@@ -58,7 +62,9 @@ function Get-BiosInfo
 	process {
 		foreach ($comp in $ComputerName)
 		{
-			get-wmiobject -Class Win32_Bios -ComputerName $comp
+			$obj = get-wmiobject -Class Win32_Bios -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
@@ -79,10 +85,12 @@ function Get-LogicalDiskInfo
 		foreach ($comp in $ComputerName)
 		{
 			if (![String]::IsNullOrEmpty($DeviceID)) {
-				get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp -Filter "DeviceID = '$DeviceID'"
+				$obj = get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp -Filter "DeviceID = '$DeviceID'"
 			} else {
-				get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp
+				$obj = get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp
 			}
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
@@ -102,7 +110,9 @@ function Get-DiskPartitionInfo
 	process {
 		foreach ($comp in $ComputerName)
 		{
-			get-wmiobject -Class Win32_DiskPartition -ComputerName $comp -Filter "$Filter"
+			$obj = get-wmiobject -Class Win32_DiskPartition -ComputerName $comp -Filter "$Filter"
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
@@ -120,12 +130,33 @@ function Get-DiskDriveInfo
 	process {
 		foreach ($comp in $ComputerName)
 		{
-			get-wmiobject -Class Win32_DiskDrive -ComputerName $comp
+			$obj = get-wmiobject -Class Win32_DiskDrive -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
 		}
 	}
 	end {}
 }
 
+
+function Get-ProcessorInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_Processor -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
 
 
 function Get-NetObject([string]$Match)
