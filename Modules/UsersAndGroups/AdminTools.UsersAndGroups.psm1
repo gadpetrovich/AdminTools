@@ -22,20 +22,24 @@ function Add-UserToAdmin
 		[string]$UserName
 	)
 
-    $col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
-    # local admin group
-    $admgrp_name = $col_groups.Name
-    $domain_name = (gwmi Win32_computersystem).domain
-    $group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
-        
-    if(-not (check_user_into_admin_group $UserName $group))
-    {
-        $group.Add("WinNT://$domain_name/$UserName")
-    }
-    else
-    {
-        throw "Пользователь $UserName уже добавлен в список локальных администраторов"
-    }
+	try {
+		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
+		# local admin group
+		$admgrp_name = $col_groups.Name
+		$domain_name = (gwmi Win32_computersystem).domain
+		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
+			
+		if(-not (check_user_into_admin_group $UserName $group))
+		{
+			$group.Add("WinNT://$domain_name/$UserName")
+		}
+		else
+		{
+			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
+		}
+	} catch {
+		throw ($_)
+	}
 }
 
 # удаляем пользователя из группы локальных администраторов
@@ -49,19 +53,22 @@ function Remove-UserFromAdmin
 		[string]$UserName
 	)
 	
-    $col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
-    # local admin group
-    $admgrp_name = $col_groups.Name
-    $domain_name = (gwmi Win32_computersystem).domain
-    $group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
-    
-    if(check_user_into_admin_group $UserName $group)
-    {
-        $group.Remove("WinNT://$domain_name/$UserName")
-    }
-    else
-    {
-        throw "Пользователь $UserName отсутствует в списке локальных администраторов"
-    }
-    
+	try {
+		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
+		# local admin group
+		$admgrp_name = $col_groups.Name
+		$domain_name = (gwmi Win32_computersystem).domain
+		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
+		
+		if(check_user_into_admin_group $UserName $group)
+		{
+			$group.Remove("WinNT://$domain_name/$UserName")
+		}
+		else
+		{
+			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
+		}
+    } catch {
+		throw ($_)
+	}
 }
