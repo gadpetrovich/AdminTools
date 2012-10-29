@@ -33,9 +33,25 @@ Stop-RemoteService - Останавливает службы на удаленн
 
 ### Test
 
+Skip-Null
+
 Get-OsInfo
 
+Get-ComputerInfo
+
+Get-BiosInfo
+
+Get-LogicalDiskInfo
+
+Get-DiskPartitionInfo
+
+Get-DiskDriveInfo
+
+Get-ProcessorInfo
+
 Get-NetObject
+
+Format-TableAuto
 
 Join-Object - Объединяет два списка в один.
 
@@ -51,3 +67,4 @@ Remove-UserFromAdmin
 *   get - Select-Object
 *   Add-Program - Install-Program
 *   Remove-Program - Uninstall-Program
+*   fta - Format-TableAuto
