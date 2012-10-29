@@ -159,6 +159,300 @@ function Get-ProcessorInfo
 }
 
 
+function Get-MotherboardInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class win32_baseboard -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+<# 
+ .Synopsis
+  Выводит список устройств, встроенных в материнскую плату.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_OnBoardDevice.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-OnBoardDeviceInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список встроенных устройств на текущем компьютере. 
+ 
+ .Example
+   PS C:\> Get-OnBoardDeviceInfo computer1, computer2 | select ComputerName, Description | ft -a
+
+   Описание
+   -----------
+   Эта команда возвращает список встроенных устройств материнских плат компьютеров computer1 и computer2.
+     
+#>
+function Get-OnBoardDeviceInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_OnBoardDevice -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+
+<# 
+ .Synopsis
+  Выводит список модулей памяти, расположенных на материнской плате.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_PhysicalMemory.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-PhysicalMemoryInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список модулей памяти. 
+ 
+ .Example
+   PS C:\> Get-PhysicalMemoryInfo | Update-Length -NumericParameter Capacity | select BankLabel, Capacity,  DeviceLocator, Tag, Speed, Manufacturer, PartNumber, SerialNumber | fta
+
+   Описание
+   -----------
+   Эта команда возвращает список модулей памяти в удобном для чтения виде.
+     
+#>
+function Get-PhysicalMemoryInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_PhysicalMemory -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+
+
+<# 
+ .Synopsis
+  Выводит список звуковых карт.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_SoundDevice.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-SoundDeviceInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список звуковых карт. 
+ 
+ .Example
+   PS C:\> Get-SoundDeviceInfo | select Caption, Manufacturer
+
+   Описание
+   -----------
+   Эта команда возвращает список звуковых карт в удобном для чтения виде.
+     
+#>
+function Get-SoundDeviceInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_SoundDevice -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+<# 
+ .Synopsis
+  Выводит список видеокарт.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_VideoController.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-VideoControllerInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список видеокарт. 
+ 
+ .Example
+   PS C:\> Get-VideoControllerInfo | select Caption, AdapterRAM, DeviceID, DriverVersion, VideoModeDescription
+
+   Описание
+   -----------
+   Эта команда возвращает список видеокарт в удобном для чтения виде.
+     
+#>
+function Get-VideoControllerInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_VideoController -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+
+<# 
+ .Synopsis
+  Выводит список сетевых карт.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_NetworkAdapter.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-NetworkAdapterInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список сетевых карт. 
+ 
+ .Example
+   PS C:\> Get-NetworkAdapterInfo | ? { $_.PhysicalAdapter -eq $true }
+
+   Описание
+   -----------
+   Эта команда возвращает список физических адаптеров.
+     
+#>
+function Get-NetworkAdapterInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_NetworkAdapter -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
+
+<# 
+ .Synopsis
+  Выводит список настроек сетевых карт.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_NetworkAdapterConfiguration.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-NetworkAdapterConfigurationInfo
+
+   Описание
+   -----------
+   Эта команда возвращает список сетевых адаптеров. 
+ 
+ .Example
+   PS C:\> Get-NetworkAdapterConfigurationInfo | ? { $_.IPEnabled } | select Description, IPAddress, DNSServerSearchOrder, DefaultIPGateway, IPSubnet, MACAddress
+
+   Описание
+   -----------
+   Эта команда возвращает список настроек сетевых адаптеров в удобном для чтения виде.
+     
+#>
+function Get-NetworkAdapterConfigurationInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_NetworkAdapterConfiguration -ComputerName $comp
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp
+			$obj
+		}
+	}
+	end {}
+}
+
 function Get-NetObject([string]$Match)
 {
     $objs = net view 

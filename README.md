@@ -49,6 +49,20 @@ Get-DiskDriveInfo
 
 Get-ProcessorInfo
 
+Get-MotherboardInfo
+
+Get-OnBoardDeviceInfo - Выводит список устройств, встроенных в материнскую плату.
+
+Get-PhysicalMemoryInfo - Выводит список модулей памяти, расположенных на материнской плате.
+
+Get-SoundDeviceInfo - Выводит список звуковых карт.
+
+Get-VideoControllerInfo - Выводит список видеокарт.
+
+Get-NetworkAdapterInfo - Выводит список сетевых карт.
+
+Get-NetworkAdapterConfigurationInfo - Выводит список настроек сетевых карт.
+
 Get-NetObject
 
 Format-TableAuto
