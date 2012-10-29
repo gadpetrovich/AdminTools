@@ -342,7 +342,6 @@ function Install-Program()
 	begin {}
 	process {
 		try {
-			$temp_file = [System.IO.Path]::GetTempFileName()
 			
 			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
@@ -375,7 +374,7 @@ function Install-Program()
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 			}
 			Write-Verbose $_cmd
-			&cmd /c "`"$_cmd`"" 2>$null 1>$temp_file
+			$output_date = &cmd /c "`"$_cmd`"" 2>$null
 			$exit_code = $LastExitCode
 			
 			Write-Verbose "Ждем, когда завершатся процессы установки"
@@ -405,9 +404,7 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-				if (Test-Path $temp_file) {
-					$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
-				}
+				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
 				
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
@@ -421,13 +418,10 @@ function Install-Program()
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-			if (Test-Path $temp_file) {
-				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value (cat $temp_file)
-			}
+			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
 			
 			$OutputObj
 		}
-		rm -Force $temp_file -ErrorAction SilentlyContinue
 	}
 	
 	end {}
