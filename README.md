@@ -35,6 +35,20 @@ Stop-RemoteService - Останавливает службы на удаленн
 
 Skip-Null
 
+Get-NetObject
+
+Format-TableAuto
+
+Join-Object - Объединяет два списка в один.
+
+### UserAndGroups
+
+Add-UserToAdmin
+
+Remove-UserFromAdmin
+
+### WMI
+
 Get-OsInfo
 
 Get-ComputerInfo
@@ -51,29 +65,17 @@ Get-ProcessorInfo
 
 Get-MotherboardInfo
 
-Get-OnBoardDeviceInfo - Выводит список устройств, встроенных в материнскую плату.
+Get-OnBoardDeviceInfo - Список устройств, встроенных в материнскую плату.
 
-Get-PhysicalMemoryInfo - Выводит список модулей памяти, расположенных на материнской плате.
+Get-PhysicalMemoryInfo - Список модулей памяти, расположенных на материнской плате.
 
-Get-SoundDeviceInfo - Выводит список звуковых карт.
+Get-SoundDeviceInfo - Список звуковых карт.
 
-Get-VideoControllerInfo - Выводит список видеокарт.
+Get-VideoControllerInfo - Список видеокарт.
 
-Get-NetworkAdapterInfo - Выводит список сетевых карт.
+Get-NetworkAdapterInfo - Список сетевых карт.
 
-Get-NetworkAdapterConfigurationInfo - Выводит список настроек сетевых карт.
-
-Get-NetObject
-
-Format-TableAuto
-
-Join-Object - Объединяет два списка в один.
-
-### UserAndGroups
-
-Add-UserToAdmin
-
-Remove-UserFromAdmin
+Get-NetworkAdapterConfigurationInfo - Список настроек сетевых карт.
 
 Алиасы
 ------

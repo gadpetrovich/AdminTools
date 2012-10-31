@@ -79,7 +79,7 @@ AliasesToExport = '*'
 
 # Список всех модулей, входящих в пакет данного модуля
 #ModuleList = @()
-ModuleList = 'FileSystem', 'Programs', 'UsersAndGroups'
+ModuleList = 'FileSystem', 'Programs', 'UsersAndGroups', 'Services', 'Test', 'WMI'
 
 # Список всех файлов, входящих в пакет данного модуля
 FileList = 'AdminTools.psd1', 'AdminTools.psm1'
