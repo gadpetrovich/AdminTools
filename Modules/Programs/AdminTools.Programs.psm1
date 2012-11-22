@@ -56,7 +56,7 @@ function Get-Program
 {
 	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(position=0,Mandatory=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
+		[parameter(position=0,Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
 		[string[]]$AppName,
 		
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]            
@@ -187,7 +187,7 @@ function Uninstall-Program
 {
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
-		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
@@ -327,7 +327,7 @@ function Install-Program()
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
