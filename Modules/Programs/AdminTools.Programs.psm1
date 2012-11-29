@@ -208,6 +208,13 @@ function Uninstall-Program
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
+					# проверяем, запущены ли процессы установки/удаления
+					$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+					if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
+					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ 
+						Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; Sleep 2 
+					}
+					# удаляем
 					$before_uninstall_date = Get-Date
 					$uninstall_key = $app.UninstallKey
 					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
@@ -221,9 +228,10 @@ function Uninstall-Program
 					$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create($_cmd)
 					$returnvalue = $returnval.returnvalue
 					
+					# ждем завершения
 					Write-Verbose "Ждем, когда завершатся процессы удаления"
 					$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-					if ($msiserver.Status -ne "Running") { $msiserver.Start() }
+					if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
 					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
 				}
 			}
@@ -348,7 +356,13 @@ function Install-Program()
 			{ 
 				throw "Для установки приложения требуются права администратора"
 			}
-		
+			# проверяем, запущены ли процессы установки/удаления
+			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+			if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
+			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ 
+				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; Sleep 2 
+			}
+			# устанавливаем
 			$file = Get-Item $ProgSource
 			$params = ""
 			
@@ -377,6 +391,7 @@ function Install-Program()
 			$output_date = &cmd /c "`"$_cmd`"" 2>$null
 			$exit_code = $LastExitCode
 			
+			#ждем завершения
 			Write-Verbose "Ждем, когда завершатся процессы установки"
 			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
 			if ($msiserver.Status -ne "Running") { $msiserver.Start() }
