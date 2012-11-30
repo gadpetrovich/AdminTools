@@ -1,4 +1,15 @@
 ﻿
+function Convert-ToHumanReadable($num)
+		{
+			switch ($num) {
+				{$num -lt 1KB} {"{0,3:N0}  B" -f ($num);break }
+				{$num -lt 1MB} {"{0,3:N0} KB" -f ($num / 1KB);break }
+				{$num -lt 1GB} {"{0,3:N0} MB" -f ($num / 1MB);break }
+				{$num -lt 1TB} {"{0,3:N0} GB" -f ($num / 1GB);break }
+				default {"{0,3:N0} TB" -f ($num / 1TB) }
+			}
+		}
+
 # аналог юникосовой программы du
 # ниже расположен рекурсивный аналог данной функции
 # здесь же пришлось развернуть рекурсию для вывода данных прямо во время сканирования папки
@@ -60,7 +71,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 		$file = $dirs[$level][ $indexes[$level] ]
 		
 		if ($ShowProgress -and ($dirs[$level].length -gt 0) -and ($level -lt 2)) {
-			Write-Progress -Id $level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($sizes[$level] / 1MB))) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
+			Write-Progress -Id $level -activity ("Вычисление размера: " + (Convert-ToHumanReadable $sizes[$level])) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
 		}
 		
 		
@@ -94,7 +105,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	foreach ($i in $dir)
 	{	
 		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 2)) {
-			Write-Progress -Id $Level -activity ("Вычисление размера: " + ("{0:N3} MB" -f ($size / 1MB))) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
+			Write-Progress -Id $Level -activity ("Вычисление размера: " + (Convert-ToHumanReadable $size)) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
 		}
 		if ( $i.PSIsContainer ) {
 			$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
@@ -244,20 +255,21 @@ function Update-DirLength
 
 <# 
  .Synopsis
-  Преобразует параметр Length в читаемый вид.
+  Преобразует целочисленные свойства в читаемый вид.
 
  .Description
-  В результате выполнения данной функции в поле Length будет записана строка в формате "{0:N3} MB". Т.е. число будет преобразовано в более читаемый вид. Изменения вносятся непосредственно в исходный список.
+  В результате выполнения данной функции в выбранное свойство будет записана строка в формате "{0,3:N0} *B". Т.е. число будет преобразовано в более читаемый вид. Изменения вносятся непосредственно в исходный список.
  
  .Parameter InputObject
    Список файлов и директорий. Может использоваться для передачи объектов по конвейеру.
  
- .Parameter NumericParameter
-   Считываемый параметр. Значение по умолчанию "Length".
- 
- .Parameter NewParameter
-   Добавляемый параметр. Содержит преобразованное значение из NumericParameter. По умолчанию то же имя, что и у NumericParameter.
+ .Parameter NumericProperty
+   Указывает, какие свойства нужно преобразовать. Подстановочные знаки разрешены. Преобразование применяется только к целочисленным свойствам.
 
+   Значение параметра NumericProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
+   -- Name (или Label) <строка>
+   -- Expression <строка> или <блок скрипта>
+ 
  .Example
    PS C:\> ls | Update-Length
 
@@ -266,7 +278,7 @@ function Update-DirLength
    Размеры файлов в текущей директории.
    
  .Example
-   PS C:\> ls -force | ? { !$_.psiscontainer  } | Update-Length -NewParameter HLength | sort length -descending | select name , hlength
+   PS C:\> ls -force | ? { !$_.psiscontainer  } | Update-Length @{Name="HLength";Expression="Length"} | sort length -descending | select name, hlength
    
    Описание
    -----------
@@ -280,21 +292,25 @@ function Update-Length
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
 		[parameter(position=0)]
-		[string[]]$NumericParameter = "Length",
-		[parameter(position=1)]
-		[string[]]$NewParameter = $NumericParameter
+		[object[]]$NumericProperty = "*"
 	)  
 	
 	begin{}
 	process {
-		if ($NewParameter.Length -ne $NumericParameter.Length) {
-			throw "Несоответствие количества параметров NumericParameter и NewParameter"
-		}
-		foreach($i in $InputObject) {      
-			for([int]$j = 0; $j -lt $NumericParameter.Length; $j++) {
-				$i | Add-Member -MemberType NoteProperty -Name ($NewParameter[$j]) -Value ("{0:N3} MB" -f ($i.($NumericParameter[$j]) / 1MB)) -force
+		
+		function addProperty($out, $prop_list)
+		{	
+			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
+				$obj = $prop_list.($ip.Name)
+				if ($obj -is [int32] -or $obj -is [int64] -or $obj -is [UInt64] -or $obj -is [uint32]) {
+					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (Convert-ToHumanReadable $prop_list.($ip.Name)) -force
+                }
 			}
-			$i
+		}
+		
+		foreach($i in $InputObject) {     
+			addProperty $i ($i | select $NumericProperty)
+            $i
 		}
 	}
 	end{}
