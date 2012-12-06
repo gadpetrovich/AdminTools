@@ -17,7 +17,7 @@ function Add-UserToAdmin
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[string]$ComputerName = ".", 
+		[string]$ComputerName = $env:computername, 
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName
 	)
@@ -26,7 +26,7 @@ function Add-UserToAdmin
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
-		$domain_name = (gwmi Win32_computersystem).domain
+		$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
 		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 			
 		if(-not (check_user_into_admin_group $UserName $group))
@@ -48,7 +48,7 @@ function Remove-UserFromAdmin
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[string]$ComputerName = ".", 
+		[string]$ComputerName = $env:computername, 
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName
 	)
@@ -57,7 +57,7 @@ function Remove-UserFromAdmin
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
-		$domain_name = (gwmi Win32_computersystem).domain
+		$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
 		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 		
 		if(check_user_into_admin_group $UserName $group)
@@ -69,6 +69,38 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
+		throw ($_)
+	}
+}
+
+function Get-AdminUsers
+{
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = $env:ComputerName
+	)
+
+	try {
+		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
+		# local admin group
+		$admgrp_name = $col_groups.Name
+		$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
+		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
+		$group_members = @($group.psbase.Invoke("Members"))
+		
+		foreach ($member in $group_members)
+		{
+			$m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
+			$d = $member.gettype().InvokeMember("Parent", "GetProperty", $null, $member, $null)
+			
+			$output = "" | Select ComputerName, Domain, UserName
+			$output.ComputerName = $ComputerName
+			if ($d -ne "WinNT:") { $output.Domain = ($d -split "/") | select -last 1 }
+			$output.UserName = $m
+			$output
+		}
+	} catch {
 		throw ($_)
 	}
 }
