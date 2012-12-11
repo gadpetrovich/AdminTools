@@ -115,7 +115,7 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			Write-Error $_
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 		}
 	}            
 
@@ -191,6 +191,8 @@ function Uninstall-Program
 		[string]$AppGUID,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
+		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[switch]$EmptyDefaultParams,
 		[switch]$Force
 	)          
 	
@@ -217,16 +219,24 @@ function Uninstall-Program
 					# удаляем
 					$before_uninstall_date = Get-Date
 					$uninstall_key = $app.UninstallKey
-					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null )
-					{    
-						$_cmd = "msiexec /x `"$AppGUID`" /qn"
+					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) 
+					{
+						$params = "/x `"$AppGUID`" "
+						if (!$EmptyDefaultParams) {
+							$params += "/qn"
+						}
+						
+						$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $params"
 					} else {
-						# сложный случай - не msi-пакет
-						$_cmd = "$uninstall_key /S /x /silent /uninstall /qn /quiet /norestart"
+						if (!$EmptyDefaultParams) {
+							$params = "/S /x /silent /uninstall /qn /quiet /norestart"
+						} 
+						
+						$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$uninstall_key`" $params"
 					}
 					Write-Verbose $_cmd
-					$returnval = ([WMICLASS]"\\$computerName\ROOT\CIMV2:win32_process").Create($_cmd)
-					$returnvalue = $returnval.returnvalue
+					$output_date = &cmd /c "`"$_cmd`"" 2>$null
+					$returnvalue = $LastExitCode
 					
 					# ждем завершения
 					Write-Verbose "Ждем, когда завершатся процессы удаления"
@@ -241,7 +251,7 @@ function Uninstall-Program
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 		} catch {
-			Write-Error $_
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 		}
 		switch ($($returnvalue)){
 			-1 { $txt = "Canceled" }
@@ -408,7 +418,7 @@ function Install-Program()
 			
 		} catch {
 			$exit_code = -1
-			Write-Error $_
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 		}
 		
 		
