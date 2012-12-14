@@ -61,7 +61,7 @@ function Get-Program
 		try
 		{
 			foreach($Computer in $ComputerName) {            
-				Write-Verbose "Working on $Computer"            
+				Write-Verbose "Берем список программ из $Computer"            
 				if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { continue }
 				
 				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
@@ -195,6 +195,10 @@ function Uninstall-Program
 
 			$returnvalue = -1
 			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
+			if ($app -eq $null) {
+				throw "Приложения с GUID = $AppGUID нет в системе"
+			}
+			
 			$appName = $app.AppName
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
@@ -239,28 +243,29 @@ function Uninstall-Program
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			throw ($_)
+		} finally {
+			switch ($($returnvalue)){
+				-1 { $txt = "Canceled" }
+				0 { $txt = "Uninstallation command triggered successfully" }
+				2 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
+				3 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
+				8 { $txt = "An unknown error has occurred" }
+				9 { $txt = "Path Not Found" }
+				21 { $txt = "Invalid Parameter"}
+			}
+			
+			
+			$OutputObj = New-Object -TypeName PSobject     
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID
+			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $appName
+			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $returnvalue
+			$OutputObj | Add-Member -MemberType NoteProperty -Name Text -Value $txt
+			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+			$OutputObj
 		}
-		switch ($($returnvalue)){
-			-1 { $txt = "Canceled" }
-			0 { $txt = "Uninstallation command triggered successfully" }
-			2 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
-			3 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
-			8 { $txt = "An unknown error has occurred" }
-			9 { $txt = "Path Not Found" }
-			21 { $txt = "Invalid Parameter"}
-		}
-		
-		
-		$OutputObj = New-Object -TypeName PSobject     
-		$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-		$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID
-		$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $appName
-		$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $returnvalue
-		$OutputObj | Add-Member -MemberType NoteProperty -Name Text -Value $txt
-		$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-		$OutputObj
-		
 	}
 	end {}
 }
@@ -406,12 +411,26 @@ function Install-Program()
 			
 		} catch {
 			$exit_code = -1
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-		}
+			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			throw ($_)
+		} finally {
 		
-		
-		if ($diff) {
-			foreach( $i in $diff) {
+			if ($diff) {
+				foreach( $i in $diff) {
+					$OutputObj = New-Object -TypeName PSobject             
+					$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+					$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
+					$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
+					$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+					$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
+					
+					$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
+					$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
+					$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
+					$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
+					$OutputObj
+				}
+			} else {
 				$OutputObj = New-Object -TypeName PSobject             
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
@@ -419,21 +438,9 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
 				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
 				
-				$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
-				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
-				$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
-				$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
 				$OutputObj
+
 			}
-		} else {
-			$OutputObj = New-Object -TypeName PSobject             
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
-			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-			$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
-			
-			$OutputObj
 		}
 	}
 	

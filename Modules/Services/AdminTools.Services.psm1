@@ -126,7 +126,8 @@ function Start-RemoteService
 			
 			
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			throw ($_)
 		}
 	}
 	end{}
@@ -256,7 +257,8 @@ function Stop-RemoteService
 			}
 			
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			throw ($_)
 		}
 	}
 	end{}
