@@ -9,7 +9,7 @@
  .Parameter ComputerName
   Компьютер, для которого требуется получить список программ, по умолчанию локальный. Может использоваться для перадачи объектов по конвейеру.
  
- .Parameter AppName
+ .Parameter AppMatch
   Регулярное выражения для поиска программы по ее названию. Может использоваться для перадачи объектов по конвейеру.
 
  .Outputs
@@ -35,13 +35,6 @@
    -----------
    Список программ на компьютере "comp01", название которых начинается с символа "p".
   
- .Example
-   PS C:\> Get-Program "prog1", "prog2" comp01 
-   
-   Описание
-   -----------
-   Отобразит список программ на компьютере "comp01", названия которых совпадают с "prog1" и "prog2".
-  
  .Link
    http://techibee.com/powershell/powershell-script-to-query-softwares-installed-on-remote-computer/1389
    
@@ -54,15 +47,11 @@
 #>
 function Get-Program
 {
-	[cmdletbinding(DefaultParameterSetName="Match")]            
 	param(            
-		[parameter(position=0,Mandatory=$true,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,ParameterSetName="Name")]            
-		[string[]]$AppName,
-		
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
 		
-		[parameter(position=0,ValueFromPipelineByPropertyName=$true,ParameterSetName="Match")]
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
 		[string]$AppMatch = ""
 	)            
 
@@ -90,8 +79,7 @@ function Get-Program
 						$AppDetails   = $HKLM.OpenSubKey($AppRegistryKey)            
 						
 						$AppDisplayName  = $($AppDetails.GetValue("DisplayName"))    
-						if($PSCmdlet.ParameterSetName -eq "Match" -and $AppDisplayName -notmatch $AppMatch ) { continue; }
-						if($PSCmdlet.ParameterSetName -eq "Name" -and $AppName -notcontains $AppDisplayName ) { continue; }
+						if($AppDisplayName -notmatch $AppMatch ) { continue; }
 						
 						$AppVersion   = $($AppDetails.GetValue("DisplayVersion"))            
 						$AppPublisher  = $($AppDetails.GetValue("Publisher"))            
