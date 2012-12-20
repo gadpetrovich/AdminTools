@@ -103,11 +103,24 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			
+			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			write-error "Возможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru"
+			throw ($_)
 		}
 	}            
 
 	end {}
+}
+
+function Wait-InstallProgram ([string]$ComputerName = $env:computername)
+{
+	$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+	if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
+	while (
+		@(Get-Process msiexec -ComputerName $ComputerName -ErrorAction:SilentlyContinue).Count -gt 1 -or 
+		(get-process *nsis* -ComputerName $ComputerName -ErrorAction:SilentlyContinue)
+	){ Sleep 2 }
 }
 
 <# 
@@ -203,11 +216,8 @@ function Uninstall-Program
 			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
 				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
 					# проверяем, запущены ли процессы установки/удаления
-					$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-					if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
-					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ 
-						Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; Sleep 2 
-					}
+					Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; 
+					Wait-InstallProgram $ComputerName
 					# удаляем
 					$before_uninstall_date = Get-Date
 					$uninstall_key = $app.UninstallKey
@@ -232,9 +242,7 @@ function Uninstall-Program
 					
 					# ждем завершения
 					Write-Verbose "Ждем, когда завершатся процессы удаления"
-					$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-					if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
-					while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
+					Wait-InstallProgram $ComputerName
 				}
 			}
 			
@@ -242,6 +250,10 @@ function Uninstall-Program
 			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
+			
+			if ($returnvalue -ne 0) {
+				throw "Не удалось удалить приложение $appName"
+			}
 		} catch {
 			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 			throw ($_)
@@ -360,11 +372,8 @@ function Install-Program()
 				throw "Для установки приложения требуются права администратора"
 			}
 			# проверяем, запущены ли процессы установки/удаления
-			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-			if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
-			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ 
-				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; Sleep 2 
-			}
+			Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
+			Wait-InstallProgram $ComputerName
 			# устанавливаем
 			$file = Get-Item $ProgSource
 			$params = ""
@@ -395,10 +404,7 @@ function Install-Program()
 			$exit_code = $LastExitCode
 			
 			#ждем завершения
-			Write-Verbose "Ждем, когда завершатся процессы установки"
-			$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-			if ($msiserver.Status -ne "Running") { $msiserver.Start() }
-			while (@(Get-Process msiexec -ComputerName $ComputerName).Count -gt 1){ Sleep 2 }
+			Wait-InstallProgram $ComputerName
 		
 			Write-Verbose "Получаем список программ"
 			$after_install_state = Get-Program -ComputerName $ComputerName
@@ -409,8 +415,9 @@ function Install-Program()
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
+			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource" }
 		} catch {
-			$exit_code = -1
+			if ($exit_code -ne 0) {	$exit_code = -1 }
 			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 			throw ($_)
 		} finally {
