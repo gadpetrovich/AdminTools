@@ -89,6 +89,14 @@ Generates a function for FlashWindow which ignores the boolean return value, and
     }
 }
 
+
+New-PInvoke user32 "void FlashWindow(IntPtr hwnd, bool bInvert)" 
+
+function Assert-PSWindow ()
+{
+	FlashWindow (ps -id $pid).MainWindowHandle $true
+}
+
 <# 
  .Synopsis
   Объединяет два списка в один.
