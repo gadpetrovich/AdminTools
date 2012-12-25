@@ -38,7 +38,7 @@ function Add-UserToAdmin
 			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
 		}
 	} catch {
-		throw ($_)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 	}
 }
 
@@ -69,7 +69,7 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
-		throw ($_)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 	}
 }
 
@@ -101,6 +101,6 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		throw ($_)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 	}
 }

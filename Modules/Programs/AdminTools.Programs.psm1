@@ -104,9 +104,7 @@ function Get-Program
 			}            
 		} catch {
 			
-			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			write-error "Возможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru"
-			throw ($_)
+			write-error ($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 		}
 	}            
 
@@ -122,6 +120,39 @@ function Wait-InstallProgram ([string]$ComputerName = $env:computername)
 		(get-process *nsis* -ComputerName $ComputerName -ErrorAction:SilentlyContinue)
 	){ Sleep 2 }
 }
+
+function Wait-WMIRestartComputer
+{
+	param(
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName,
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
+		[int]$WaitSecPeriod = 10, 
+		[parameter(position=2,ValueFromPipelineByPropertyName=$true)]
+		[int]$SecTimeout = 300
+	)
+
+	$before = Get-Date
+	# ждем, когда wmi вырубится
+	Write-Verbose "Запуск ожидания отключения WMI, время: $before"
+	while(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue) {
+		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+			Write-Error "Истекло время ожидания на остановку WMI."
+		}
+		Sleep $WaitSecPeriod
+	}
+	$before = Get-Date
+	# ждем, когда wmi заработает
+	Write-Verbose "Запуск ожидания включения WMI, время: $before"
+	while(-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
+		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+			Write-Error "Истекло время ожидания на остановку WMI."
+		}
+		Sleep $WaitSecPeriod
+	}
+	Write-Verbose "Перезагрузка завершена: $(Get-Date)"
+}
+
 
 <# 
  .Synopsis
@@ -255,8 +286,8 @@ function Uninstall-Program
 				throw "Не удалось удалить приложение $appName"
 			}
 		} catch {
-			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			throw ($_)
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			
 		} finally {
 			switch ($($returnvalue)){
 				-1 { $txt = "Canceled" }
@@ -418,8 +449,8 @@ function Install-Program()
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource" }
 		} catch {
 			if ($exit_code -ne 0) {	$exit_code = -1 }
-			#write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			throw ($_)
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			
 		} finally {
 		
 			if ($diff) {
