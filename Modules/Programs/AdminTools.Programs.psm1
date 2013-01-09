@@ -85,16 +85,16 @@ function Get-Program
 						$AppPublisher  = $($AppDetails.GetValue("Publisher"))            
 						$AppInstalledDate = $($AppDetails.GetValue("InstallDate"))            
 						$AppUninstall  = $($AppDetails.GetValue("UninstallString"))            
-						$AppGUID   = $App            
+						$AppGUID = $App            
 						if(!$AppDisplayName) { continue }            
-						$OutputObj = New-Object -TypeName PSobject             
-						$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $Computer.ToUpper()            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $AppDisplayName            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $AppVersion            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $AppPublisher            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name InstalledDate -Value $AppInstalledDate            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name UninstallKey -Value $AppUninstall            
-						$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID            
+						$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, UninstallKey, AppGUID
+						$OutputObj.ComputerName = $Computer.ToUpper()            
+						$OutputObj.AppName = $AppDisplayName            
+						$OutputObj.AppVersion = $AppVersion            
+						$OutputObj.AppVendor = $AppPublisher            
+						$OutputObj.InstalledDate = $AppInstalledDate            
+						$OutputObj.UninstallKey = $AppUninstall            
+						$OutputObj.AppGUID = $AppGUID            
 						$OutputObj# | Select ComputerName, DriveName            
 						
 						$AppDetails.Close()
@@ -304,15 +304,15 @@ function Uninstall-Program
 			}
 			
 			
-			$OutputObj = New-Object -TypeName PSobject     
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $AppGUID
-			$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $appName
-			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $returnvalue
-			$OutputObj | Add-Member -MemberType NoteProperty -Name Text -Value $txt
-			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-			$OutputObj | Add-Member -MemberType NoteProperty -Name StartTime -Value $before_uninstall_date.ToString()
-			$OutputObj | Add-Member -MemberType NoteProperty -Name EndTime -Value (Get-Date).ToString()
+			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
+			$OutputObj.ComputerName = $ComputerName
+			$OutputObj.AppGUID = $AppGUID
+			$OutputObj.AppName = $appName
+			$OutputObj.ReturnValue = $returnvalue
+			$OutputObj.Text = $txt
+			$OutputObj.EventMessage = $event_message
+			$OutputObj.StartTime = $before_uninstall_date.ToString()
+			$OutputObj.EndTime = (Get-Date).ToString()
 			
 			$OutputObj
 		}
@@ -466,28 +466,30 @@ function Install-Program()
 		
 			if ($diff) {
 				foreach( $i in $diff) {
-					$OutputObj = New-Object -TypeName PSobject             
-					$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-					$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-					$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
-					$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-					$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
+					$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, AppName, AppVersion, AppVendor, AppGUID, StartTime, EndTime
+					$OutputObj.ComputerName = $ComputerName
+					$OutputObj.ProgSource = $ProgSource
+					$OutputObj.ReturnValue = $exit_code
+					$OutputObj.EventMessage = $event_message
+					$OutputObj.OutputData = $output_data
 					
-					$OutputObj | Add-Member -MemberType NoteProperty -Name AppName -Value $i.AppName
-					$OutputObj | Add-Member -MemberType NoteProperty -Name AppVersion -Value $i.AppVersion
-					$OutputObj | Add-Member -MemberType NoteProperty -Name AppVendor -Value $i.AppVendor
-					$OutputObj | Add-Member -MemberType NoteProperty -Name AppGUID -Value $i.AppGUID
+					$OutputObj.AppName = $i.AppName
+					$OutputObj.AppVersion = $i.AppVersion
+					$OutputObj.AppVendor = $i.AppVendor
+					$OutputObj.AppGUID = $i.AppGUID
+					$OutputObj.StartTime = $before_install_date.ToString()
+					$OutputObj.EndTime = (Get-Date).ToString()
 					$OutputObj
 				}
 			} else {
-				$OutputObj = New-Object -TypeName PSobject             
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ProgSource -Value $ProgSource
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
-				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
-				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
-				$OutputObj | Add-Member -MemberType NoteProperty -Name StartTime -Value $before_install_date.ToString()
-				$OutputObj | Add-Member -MemberType NoteProperty -Name EndTime -Value (Get-Date).ToString()
+				$OutputObj = "" | select ComputerName, ProgSource, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
+				$OutputObj.ComputerName = $ComputerName
+				$OutputObj.ProgSource = $ProgSource
+				$OutputObj.ReturnValue = $exit_code
+				$OutputObj.EventMessage = $event_message
+				$OutputObj.OutputData = $output_data
+				$OutputObj.StartTime = $before_install_date.ToString()
+				$OutputObj.EndTime = (Get-Date).ToString()
 			
 				$OutputObj
 
