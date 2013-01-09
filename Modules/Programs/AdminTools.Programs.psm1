@@ -179,6 +179,8 @@ function Wait-WMIRestartComputer
   ReturnValue  - результат выполнения
   Text         - результат выполнения в текстовом виде
   EventMessage - сообщение от MsiInstaller'а
+  StartTime - начало удаления
+  EndTime   - окончание удаления
   
  .Notes
   Удалить программу можно также с помощью Get-Program: (Get-Program 7-zip computername).Uninstall()
@@ -251,6 +253,7 @@ function Uninstall-Program
 					Wait-InstallProgram $ComputerName
 					# удаляем
 					$before_uninstall_date = Get-Date
+					Write-Verbose "Время запуска удаления: $before_uninstall_date"
 					$uninstall_key = $app.UninstallKey
 					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) 
 					{
@@ -274,6 +277,7 @@ function Uninstall-Program
 					# ждем завершения
 					Write-Verbose "Ждем, когда завершатся процессы удаления"
 					Wait-InstallProgram $ComputerName
+					Write-Verbose "Время завершения удаления: $(Get-Date)"
 				}
 			}
 			
@@ -307,6 +311,9 @@ function Uninstall-Program
 			$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $returnvalue
 			$OutputObj | Add-Member -MemberType NoteProperty -Name Text -Value $txt
 			$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
+			$OutputObj | Add-Member -MemberType NoteProperty -Name StartTime -Value $before_uninstall_date.ToString()
+			$OutputObj | Add-Member -MemberType NoteProperty -Name EndTime -Value (Get-Date).ToString()
+			
 			$OutputObj
 		}
 	}
@@ -344,6 +351,8 @@ function Uninstall-Program
   ReturnValue  - результат выполнения
   EventMessage - сообщение от MsiInstaller'а
   OutputData   - текст, выводимый установщиком в стандартный поток вывода 
+  StartTime - начало установки
+  EndTime   - окончание установки
   
  .Example
    PS C:\> Install-Program testprogram
@@ -410,6 +419,7 @@ function Install-Program()
 			$params = ""
 			
 			$before_install_date = Get-Date
+			Write-Verbose "Время запуска установки: $before_install_date"
 			$before_install_state = Get-Program -ComputerName $ComputerName
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
 			{
@@ -436,6 +446,7 @@ function Install-Program()
 			
 			#ждем завершения
 			Wait-InstallProgram $ComputerName
+			Write-Verbose "Время завершения установки: $(Get-Date)"
 		
 			Write-Verbose "Получаем список программ"
 			$after_install_state = Get-Program -ComputerName $ComputerName
@@ -475,7 +486,9 @@ function Install-Program()
 				$OutputObj | Add-Member -MemberType NoteProperty -Name ReturnValue -Value $exit_code
 				$OutputObj | Add-Member -MemberType NoteProperty -Name EventMessage -Value $event_message
 				$OutputObj | Add-Member -MemberType NoteProperty -Name OutputData -Value $output_data
-				
+				$OutputObj | Add-Member -MemberType NoteProperty -Name StartTime -Value $before_install_date.ToString()
+				$OutputObj | Add-Member -MemberType NoteProperty -Name EndTime -Value (Get-Date).ToString()
+			
 				$OutputObj
 
 			}
