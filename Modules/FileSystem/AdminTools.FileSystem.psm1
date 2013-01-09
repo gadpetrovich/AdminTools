@@ -292,7 +292,7 @@ function Update-Length
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
 		[parameter(position=0)]
-		[object[]]$NumericProperty = "*"
+		[object[]]$NumericProperty = @("*Size*", "*Free*", "*Space*", "*Length*")
 	)  
 	
 	begin{}
@@ -309,7 +309,9 @@ function Update-Length
 		}
 		
 		foreach($i in $InputObject) {     
-			addProperty $i ($i | select $NumericProperty)
+			foreach($p in $NumericProperty) { 
+				addProperty $i ($i | select $p)
+			}
             $i
 		}
 	}
