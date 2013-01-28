@@ -105,6 +105,7 @@ function Get-Program
 		} catch {
 			
 			write-error ($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+			#throw $_
 		}
 	}            
 
@@ -291,7 +292,7 @@ function Uninstall-Program
 			}
 		} catch {
 			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			
+			#throw $_
 		} finally {
 			switch ($($returnvalue)){
 				-1 { $txt = "Canceled" }
@@ -461,7 +462,7 @@ function Install-Program()
 		} catch {
 			if ($exit_code -ne 0) {	$exit_code = -1 }
 			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			
+			#throw $_
 		} finally {
 		
 			if ($diff) {
@@ -482,7 +483,7 @@ function Install-Program()
 					$OutputObj
 				}
 			} else {
-				$OutputObj = "" | select ComputerName, ProgSource, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
+				$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
 				$OutputObj.ComputerName = $ComputerName
 				$OutputObj.ProgSource = $ProgSource
 				$OutputObj.ReturnValue = $exit_code
