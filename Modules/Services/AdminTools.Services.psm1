@@ -99,6 +99,7 @@ function Start-RemoteService
 			}
 		}
 		try {
+			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
 				"ServiceControllers" { 
@@ -231,6 +232,7 @@ function Stop-RemoteService
 		}
 		
 		try {
+			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
 				"ServiceControllers" { 

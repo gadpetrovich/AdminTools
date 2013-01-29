@@ -60,6 +60,7 @@ function Get-Program
 	process {            
 		try
 		{
+			$ErrorActionPreference = "Stop"
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
 				if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { continue }
@@ -234,6 +235,7 @@ function Uninstall-Program
 	begin {}
 	process {
 		try {
+			$ErrorActionPreference = "Stop"
 			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
 			{ 
@@ -406,7 +408,7 @@ function Install-Program()
 	begin {}
 	process {
 		try {
-			
+			$ErrorActionPreference = "Stop"
 			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
 			{ 

@@ -23,6 +23,7 @@ function Add-UserToAdmin
 	)
 
 	try {
+		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
@@ -54,6 +55,7 @@ function Remove-UserFromAdmin
 	)
 	
 	try {
+		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
@@ -82,6 +84,7 @@ function Get-AdminUsers
 	)
 
 	try {
+		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
