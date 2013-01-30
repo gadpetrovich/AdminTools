@@ -292,7 +292,7 @@ function Update-Length
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[PSobject]$InputObject,
 		[parameter(position=0)]
-		[object[]]$NumericProperty = @("*Size*", "*Free*", "*Space*", "*Length*", "*Memory*")
+		[object[]]$NumericProperty = @("*Size*", "*Free*", "*Space*", "*Length*", "*Memory*", "*capacity*")
 	)  
 	
 	begin{}

@@ -274,8 +274,10 @@ function Uninstall-Program
 						$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$uninstall_key`" $params"
 					}
 					Write-Verbose $_cmd
+					$ErrorActionPreference = "SilentlyContinue"
 					$output_date = &cmd /c "`"$_cmd`"" 2>$null
 					$returnvalue = $LastExitCode
+					$ErrorActionPreference = "Stop"
 					
 					# ждем завершения
 					Write-Verbose "Ждем, когда завершатся процессы удаления"
@@ -444,8 +446,10 @@ function Install-Program()
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 			}
 			Write-Verbose $_cmd
+			$ErrorActionPreference = "SilentlyContinue"
 			$output_date = &cmd /c "`"$_cmd`"" 2>$null
 			$exit_code = $LastExitCode
+			$ErrorActionPreference = "Stop"
 			
 			#ждем завершения
 			Wait-InstallProgram $ComputerName
