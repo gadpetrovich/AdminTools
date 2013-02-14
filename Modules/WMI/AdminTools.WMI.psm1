@@ -667,3 +667,112 @@ function Get-NetworkAdapterConfigurationInfo
 	}
 	end {}
 }
+
+
+
+<# 
+ .Synopsis
+  Выводит информацию о процессах.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_Process.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+  
+ .Example
+   PS C:\> Get-ProcessInfo
+
+   Описание
+   -----------
+   Эта команда возвращает информацию о процессах. 
+ 
+ .Example
+   PS C:\> Get-ProcessInfo -ComputerName comp1, comp2, comp3 | select Name, CommandLine, VM, WS
+
+   Описание
+   -----------
+   Эта команда возвращает список свойств процессов в удобном для чтения виде.
+ 
+ .Example
+   PS C:\> Get-ProcessInfo compname "Name like 'service%'"
+
+   Описание
+   -----------
+   Эта команда возвращает список свойств процессов, имена которых начинаются на service.
+#>
+function Get-ProcessInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername,
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string]$Filter = ""
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_Process -ComputerName $comp -Filter "$Filter"
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			$obj
+		}
+	}
+	end {}
+}
+
+
+
+<# 
+ .Synopsis
+  Выводит информацию о службах.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_Service.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+
+ .Example
+   PS C:\> Get-ServiceInfo
+
+   Описание
+   -----------
+   Эта команда возвращает информацию о службах. 
+ 
+ .Example
+   PS C:\> Get-ServiceInfo -ComputerName comp1, comp2, comp3 | fta
+
+   Описание
+   -----------
+   Эта команда возвращает список свойств служб в удобном для чтения виде.
+ 
+ .Example
+   PS C:\> Get-ServiceInfo compname "Name like 'service%'"
+
+   Описание
+   -----------
+   Эта команда возвращает список свойств служб, имена которых начинаются на service.
+#>
+function Get-ServiceInfo
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername,
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string]$Filter = ""
+	)  
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			$obj = get-wmiobject -Class Win32_Service -ComputerName $comp -Filter "$Filter"
+			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			$obj
+		}
+	}
+	end {}
+}
