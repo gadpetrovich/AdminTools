@@ -2,11 +2,15 @@
 function Convert-ToHumanReadable($num)
 		{
 			switch ($num) {
-				{$num -lt 1KB} {"{0,3:N0}  B" -f ($num);break }
-				{$num -lt 1MB} {"{0,3:N0} KB" -f ($num / 1KB);break }
-				{$num -lt 1GB} {"{0,3:N0} MB" -f ($num / 1MB);break }
-				{$num -lt 1TB} {"{0,3:N0} GB" -f ($num / 1GB);break }
-				default {"{0,3:N0} TB" -f ($num / 1TB) }
+				{$num -lt 1000} {"{0,4:N0}  B" -f ($num);break }
+				{$num -lt 10KB} {"{0,4:N1} KB" -f ($num / 1KB);break }
+				{$num -lt 1000KB} {"{0,4:N0} KB" -f ($num / 1KB);break }
+				{$num -lt 10MB} {"{0,4:N1} MB" -f ($num / 1MB);break }
+				{$num -lt 1000MB} {"{0,4:N0} MB" -f ($num / 1MB);break }
+				{$num -lt 10GB} {"{0,4:N1} GB" -f ($num / 1GB);break }
+				{$num -lt 1000GB} {"{0,4:N0} GB" -f ($num / 1GB);break }
+				{$num -lt 10TB} {"{0,4:N1} TB" -f ($num / 1TB);break }
+				default {"{0,4:N0} TB" -f ($num / 1TB) }
 			}
 		}
 

@@ -118,8 +118,8 @@ function Wait-InstallProgram ([string]$ComputerName = $env:computername)
 	$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
 	if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
 	while (
-		@(Get-Process msiexec -ComputerName $ComputerName -ErrorAction:SilentlyContinue).Count -gt 1 -or 
-		(get-process *nsis* -ComputerName $ComputerName -ErrorAction:SilentlyContinue)
+		@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
+		(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "nsis" } )
 	){ Sleep 2 }
 }
 
