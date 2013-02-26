@@ -1,5 +1,5 @@
 ﻿
-function Convert-ToHumanReadable($num)
+function ConvertTo-HumanReadable($num)
 		{
 			switch ($num) {
 				{$num -lt 1000} {"{0,4:N0}  B" -f ($num);break }
@@ -75,7 +75,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 		$file = $dirs[$level][ $indexes[$level] ]
 		
 		if ($ShowProgress -and ($dirs[$level].length -gt 0) -and ($level -lt 2)) {
-			Write-Progress -Id $level -activity ("Вычисление размера: " + (Convert-ToHumanReadable $sizes[$level])) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
+			Write-Progress -Id $level -activity ("Вычисление размера: " + (ConvertTo-HumanReadable $sizes[$level])) -status ("Сканирование " + $file.FullName) -PercentComplete (($indexes[$level] / ($dirs[$level].length))  * 100)
 		}
 		
 		
@@ -109,7 +109,7 @@ function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [s
 	foreach ($i in $dir)
 	{	
 		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 2)) {
-			Write-Progress -Id $Level -activity ("Вычисление размера: " + (Convert-ToHumanReadable $size)) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
+			Write-Progress -Id $Level -activity ("Вычисление размера: " + (ConvertTo-HumanReadable $size)) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
 		}
 		if ( $i.PSIsContainer ) {
 			$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
@@ -307,7 +307,7 @@ function Update-Length
 			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
 				$obj = $prop_list.($ip.Name)
 				if ($obj -is [int32] -or $obj -is [int64] -or $obj -is [UInt64] -or $obj -is [uint32]) {
-					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (Convert-ToHumanReadable $prop_list.($ip.Name)) -force
+					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (ConvertTo-HumanReadable $prop_list.($ip.Name)) -force
                 }
 			}
 		}

@@ -19,6 +19,7 @@
   AppVendor
   InstalledDate
   UninstallKey
+  QuietUninstallKey
   AppGUID
   
  .Example
@@ -85,16 +86,18 @@ function Get-Program
 						$AppVersion   = $($AppDetails.GetValue("DisplayVersion"))            
 						$AppPublisher  = $($AppDetails.GetValue("Publisher"))            
 						$AppInstalledDate = $($AppDetails.GetValue("InstallDate"))            
-						$AppUninstall  = $($AppDetails.GetValue("UninstallString"))            
+						$AppUninstall  = $($AppDetails.GetValue("UninstallString"))
+						$AppQuietUninstall  = $($AppDetails.GetValue("QuietUninstallString"))            
 						$AppGUID = $App            
 						if(!$AppDisplayName) { continue }            
-						$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, UninstallKey, AppGUID
+						$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, UninstallKey, QuietUninstallKey, AppGUID
 						$OutputObj.ComputerName = $Computer.ToUpper()            
 						$OutputObj.AppName = $AppDisplayName            
 						$OutputObj.AppVersion = $AppVersion            
 						$OutputObj.AppVendor = $AppPublisher            
 						$OutputObj.InstalledDate = $AppInstalledDate            
 						$OutputObj.UninstallKey = $AppUninstall            
+						$OutputObj.QuietUninstallKey = $AppQuietUninstall 
 						$OutputObj.AppGUID = $AppGUID            
 						$OutputObj# | Select ComputerName, DriveName            
 						
@@ -234,56 +237,62 @@ function Uninstall-Program
 	
 	begin {}
 	process {
+		$app_name = ""
+		$output_data = ""
 		try {
 			$ErrorActionPreference = "Stop"
-			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
-			{ 
+			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
+			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для удаления приложения требуются права администратора"
 			}
 
-			$returnvalue = -1
+			$return_value = -1
 			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
 			if ($app -eq $null) {
 				throw "Приложения с GUID = $AppGUID нет в системе"
 			}
 			
-			$appName = $app.AppName
-			if ($pscmdlet.ShouldProcess("$appName на компьютере $ComputerName")) {
-				if ($Force -or $pscmdlet.ShouldContinue("Удаление программы $appName на компьютере $ComputerName", "")) {
-					# проверяем, запущены ли процессы установки/удаления
-					Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; 
-					Wait-InstallProgram $ComputerName
-					# удаляем
-					$before_uninstall_date = Get-Date
-					Write-Verbose "Время запуска удаления: $before_uninstall_date"
-					$uninstall_key = $app.UninstallKey
-					if ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) 
-					{
-						$params = "/x `"$AppGUID`" "
-						if (!$EmptyDefaultParams) {
-							$params += "/qn"
-						}
-						
-						$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $params"
-					} else {
-						if (!$EmptyDefaultParams) {
-							$params = "/S /x /silent /uninstall /qn /quiet /norestart"
-						} 
-						
-						$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$uninstall_key`" $params"
+			$app_name = $app.AppName
+			$before_uninstall_date = Get-Date
+			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and 
+				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))) {
+				# проверяем, запущены ли процессы установки/удаления
+				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; 
+				Wait-InstallProgram $ComputerName
+				# удаляем
+				Write-Verbose "Время запуска удаления: $before_uninstall_date"
+				$uninstall_key = $app.UninstallKey
+				if ($app.QuietUninstallKey -ne $null) {
+					$quiet_uninstall_key = $app.QuietUninstallKey
+					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName $quiet_uninstall_key"
+				} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
+					$params = "/x `"$AppGUID`" "
+					if (!$EmptyDefaultParams) {
+						$params += "/qn"
 					}
-					Write-Verbose $_cmd
-					$ErrorActionPreference = "SilentlyContinue"
-					$output_date = &cmd /c "`"$_cmd`"" 2>$null
-					$returnvalue = $LastExitCode
-					$ErrorActionPreference = "Stop"
 					
-					# ждем завершения
-					Write-Verbose "Ждем, когда завершатся процессы удаления"
-					Wait-InstallProgram $ComputerName
-					Write-Verbose "Время завершения удаления: $(Get-Date)"
+					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $params"
+				} else {
+					if (!$EmptyDefaultParams) {
+						$params = "/S /x /silent /uninstall /qn /quiet /norestart"
+					} 
+					if ($uninstall_key.IndexOf('"') -eq -1 -and $uninstall_key.Split().Count -gt 1) {
+						$i = $uninstall_key.IndexOf(".exe")
+						$uninstall_key = $uninstall_key.Insert(0, '"')
+						$uninstall_key = $uninstall_key.Insert($i+5, '"')
+					}
+					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName $uninstall_key $params"
 				}
+				Write-Verbose $_cmd
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$return_value = $LastExitCode
+				
+				# ждем завершения
+				Write-Verbose "Ждем, когда завершатся процессы удаления"
+				Wait-InstallProgram $ComputerName
+				Write-Verbose "Время завершения удаления: $(Get-Date)"
+			} else {
+				$return_value = 0
 			}
 			
 			Write-Verbose "Получаем список событий, связанных с удалением"
@@ -291,30 +300,20 @@ function Uninstall-Program
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
-			if ($returnvalue -ne 0) {
-				throw "Не удалось удалить приложение $appName"
+			if ($return_value -ne 0) {
+				throw "Не удалось удалить приложение $app_name"
 			}
 		} catch {
 			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 			#throw $_
 		} finally {
-			switch ($($returnvalue)){
-				-1 { $txt = "Canceled" }
-				0 { $txt = "Uninstallation command triggered successfully" }
-				2 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
-				3 { $txt = "You don't have sufficient permissions to trigger the command on $Computer" }
-				8 { $txt = "An unknown error has occurred" }
-				9 { $txt = "Path Not Found" }
-				21 { $txt = "Invalid Parameter"}
-			}
-			
 			
 			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
 			$OutputObj.ComputerName = $ComputerName
 			$OutputObj.AppGUID = $AppGUID
-			$OutputObj.AppName = $appName
-			$OutputObj.ReturnValue = $returnvalue
-			$OutputObj.Text = $txt
+			$OutputObj.AppName = $app_name
+			$OutputObj.ReturnValue = $return_value
+			$OutputObj.Text = $output_data[$output_data.Count-1]
 			$OutputObj.EventMessage = $event_message
 			$OutputObj.StartTime = $before_uninstall_date.ToString()
 			$OutputObj.EndTime = (Get-Date).ToString()
@@ -393,7 +392,7 @@ function Uninstall-Program
 #>
 function Install-Program() 
 {
-	[cmdletbinding()]
+	[cmdletbinding(SupportsShouldProcess=$True)]
 	param(
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
@@ -409,52 +408,54 @@ function Install-Program()
 	)
 	begin {}
 	process {
+		$exit_code = 0
+		$output_data = ""
+		$before_install_date = Get-Date
 		try {
 			$ErrorActionPreference = "Stop"
-			$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-			if (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) 
-			{ 
+			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
+			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для установки приложения требуются права администратора"
 			}
-			# проверяем, запущены ли процессы установки/удаления
-			Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
-			Wait-InstallProgram $ComputerName
 			# устанавливаем
 			$file = Get-Item $ProgSource
 			$params = ""
 			
-			$before_install_date = Get-Date
 			Write-Verbose "Время запуска установки: $before_install_date"
 			$before_install_state = Get-Program -ComputerName $ComputerName
-			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") 
-			{
-				if (!$UseOnlyInstallParams) {
-					$params = "/quiet /norestart /qn"
-				}
-				if ($file.Extension -ieq ".msi") {
-					$install_type = "/i"
+			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and
+				($pscmdlet.ShouldContinue("Установка программы $app_name на компьютере $ComputerName", ""))) {
+				
+				# проверяем, запущены ли процессы установки/удаления
+				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
+				Wait-InstallProgram $ComputerName
+				
+				if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
+					if (!$UseOnlyInstallParams) {
+						$params = "/quiet /norestart /qn"
+					}
+					if ($file.Extension -ieq ".msi") {
+						$install_type = "/i"
+					} else {
+						$install_type = "/update"
+					}
+					
+					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $install_type `"$ProgSource`" $params $InstallParams"
 				} else {
-					$install_type = "/update"
+					if (!$UseOnlyInstallParams) {
+						$params = "/S /silent /quiet /norestart /q /qn"
+					} 
+					
+					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
 				}
+				Write-Verbose $_cmd
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$exit_code = $LastExitCode
 				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $install_type `"$ProgSource`" $params $InstallParams"
-			} else {
-				if (!$UseOnlyInstallParams) {
-					$params = "/S /silent /quiet /norestart /q /qn"
-				} 
-				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
+				#ждем завершения
+				Wait-InstallProgram $ComputerName
+				Write-Verbose "Время завершения установки: $(Get-Date)"
 			}
-			Write-Verbose $_cmd
-			$ErrorActionPreference = "SilentlyContinue"
-			$output_date = &cmd /c "`"$_cmd`"" 2>$null
-			$exit_code = $LastExitCode
-			$ErrorActionPreference = "Stop"
-			
-			#ждем завершения
-			Wait-InstallProgram $ComputerName
-			Write-Verbose "Время завершения установки: $(Get-Date)"
-		
 			Write-Verbose "Получаем список программ"
 			$after_install_state = Get-Program -ComputerName $ComputerName
 			$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
@@ -466,7 +467,7 @@ function Install-Program()
 			
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource" }
 		} catch {
-			if ($exit_code -ne 0) {	$exit_code = -1 }
+			if ($exit_code -eq 0) {	$exit_code = -1 }
 			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
 			#throw $_
 		} finally {
@@ -478,7 +479,7 @@ function Install-Program()
 					$OutputObj.ProgSource = $ProgSource
 					$OutputObj.ReturnValue = $exit_code
 					$OutputObj.EventMessage = $event_message
-					$OutputObj.OutputData = $output_data
+					$OutputObj.OutputData = $output_data[$output_data.Count-1]
 					
 					$OutputObj.AppName = $i.AppName
 					$OutputObj.AppVersion = $i.AppVersion
@@ -494,7 +495,7 @@ function Install-Program()
 				$OutputObj.ProgSource = $ProgSource
 				$OutputObj.ReturnValue = $exit_code
 				$OutputObj.EventMessage = $event_message
-				$OutputObj.OutputData = $output_data
+				$OutputObj.OutputData = $output_data[$output_data.Count-1]
 				$OutputObj.StartTime = $before_install_date.ToString()
 				$OutputObj.EndTime = (Get-Date).ToString()
 			
