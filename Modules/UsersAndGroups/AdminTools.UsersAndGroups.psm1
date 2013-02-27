@@ -39,7 +39,9 @@ function Add-UserToAdmin
 			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
 		}
 	} catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
+		$pscmdlet.WriteError($er)
 	}
 }
 
@@ -71,7 +73,9 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
+		$pscmdlet.WriteError($er)
 	}
 }
 
@@ -104,6 +108,8 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
+		$pscmdlet.WriteError($er)
 	}
 }

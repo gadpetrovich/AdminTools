@@ -304,8 +304,9 @@ function Uninstall-Program
 				throw "Не удалось удалить приложение $app_name"
 			}
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			#throw $_
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
+			$pscmdlet.WriteError($er)
 		} finally {
 			
 			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
@@ -468,8 +469,9 @@ function Install-Program()
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource" }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			#throw $_
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
+			$pscmdlet.WriteError($er)
 		} finally {
 		
 			if ($diff) {
