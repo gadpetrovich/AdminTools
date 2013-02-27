@@ -107,9 +107,9 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			
-			write-error ($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage) -CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId
-			#throw $_
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage)
+			$pscmdlet.WriteError($er)
 		}
 	}            
 
@@ -173,6 +173,9 @@ function Wait-WMIRestartComputer
  .Parameter AppGUID
   Guid деинсталлируемой программы. Может использоваться для перадачи объектов по конвейеру.
 
+ .Parameter $EmptyDefaultParams
+  Убирает стандартные параметры удаления nsis и msiexec. Не влияет на программы, у которых есть параметр QuietUninstallKey.
+  
  .Parameter Force
   Подавляет запрос на удаление программы. Для дополнительных запросов можно использовать параметр Confirm.
  
@@ -301,7 +304,7 @@ function Uninstall-Program
 			foreach($i in $events) { $event_message += $i.message }
 			
 			if ($return_value -ne 0) {
-				throw "Не удалось удалить приложение $app_name"
+				throw "Не удалось удалить приложение " + $app_name
 			}
 		} catch {
 			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
@@ -466,7 +469,7 @@ function Install-Program()
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
-			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource" }
+			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения" + $ProgSource }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
 			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
