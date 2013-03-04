@@ -122,7 +122,7 @@ function Wait-InstallProgram ([string]$ComputerName = $env:computername)
 	if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
 	while (
 		@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
-		(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "nsis" } )
+		(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst)" })
 	){ Sleep 2 }
 }
 
@@ -348,6 +348,9 @@ function Uninstall-Program
  .Parameter UseOnlyInstallParams
   Использовать для установки только параметры из InstallParams.
   
+ .Parameter Force
+  Подавляет запрос на установку программы. Для дополнительных запросов можно использовать параметр Confirm.
+  
  .Outputs
   PSObject. Содержит следующие параметры
   ComputerName - имя компьютера
@@ -408,7 +411,8 @@ function Install-Program()
 		[string]$InstallParams = "", 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[switch]$UseOnlyInstallParams
+		[switch]$UseOnlyInstallParams,
+		[switch]$Force
 	)
 	begin {}
 	process {
@@ -427,8 +431,8 @@ function Install-Program()
 			
 			Write-Verbose "Время запуска установки: $before_install_date"
 			$before_install_state = Get-Program -ComputerName $ComputerName
-			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and
-				($pscmdlet.ShouldContinue("Установка программы $app_name на компьютере $ComputerName", ""))) {
+			if ($pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
+				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
 				
 				# проверяем, запущены ли процессы установки/удаления
 				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
