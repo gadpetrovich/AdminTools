@@ -107,7 +107,7 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage)
 			$pscmdlet.WriteError($er)
 		}
@@ -315,7 +315,7 @@ function Uninstall-Program
 				throw "Не удалось удалить приложение $app_name." + ([String]::Join("`n", $output_data)) 
 			}
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
 			$pscmdlet.WriteError($er)
 		} finally {
@@ -491,7 +491,7 @@ function Install-Program()
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
 			$pscmdlet.WriteError($er)
 		} finally {

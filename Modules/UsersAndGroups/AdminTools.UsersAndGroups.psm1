@@ -39,7 +39,7 @@ function Add-UserToAdmin
 			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
 		}
 	} catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
 		$pscmdlet.WriteError($er)
 	}
@@ -73,7 +73,7 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
 		$pscmdlet.WriteError($er)
 	}
@@ -108,7 +108,7 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
+		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
 		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
 		$pscmdlet.WriteError($er)
 	}
