@@ -173,9 +173,12 @@ function Wait-WMIRestartComputer
  .Parameter AppGUID
   Guid деинсталлируемой программы. Может использоваться для перадачи объектов по конвейеру.
 
- .Parameter $EmptyDefaultParams
+ .Parameter EmptyDefaultParams
   Убирает стандартные параметры удаления nsis и msiexec. Не влияет на программы, у которых есть параметр QuietUninstallKey.
   
+ .Parameter Visible
+  Выводит окно деинсталлятора на рабочий стол удаленного компьютера.
+ 
  .Parameter Force
   Подавляет запрос на удаление программы. Для дополнительных запросов можно использовать параметр Confirm.
  
@@ -235,6 +238,7 @@ function Uninstall-Program
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$EmptyDefaultParams,
+		[switch]$Visible,
 		[switch]$Force
 	)          
 	
@@ -265,6 +269,10 @@ function Uninstall-Program
 				# удаляем
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
 				$uninstall_key = $app.UninstallKey
+				
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
+				if ($Visible) { $_cmd += "i" }
+				
 				if ($app.QuietUninstallKey -ne $null) {
 					$quiet_uninstall_key = $app.QuietUninstallKey
 					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName $quiet_uninstall_key"
@@ -274,7 +282,7 @@ function Uninstall-Program
 						$params += "/qn"
 					}
 					
-					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $params"
+					$_cmd += " msiexec $params"
 				} else {
 					if (!$EmptyDefaultParams) {
 						$params = "/S /x /silent /uninstall /qn /quiet /norestart"
@@ -284,7 +292,7 @@ function Uninstall-Program
 						$uninstall_key = $uninstall_key.Insert(0, '"')
 						$uninstall_key = $uninstall_key.Insert($i+5, '"')
 					}
-					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName $uninstall_key $params"
+					$_cmd += " $uninstall_key $params"
 				}
 				Write-Verbose $_cmd
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
@@ -304,7 +312,7 @@ function Uninstall-Program
 			foreach($i in $events) { $event_message += $i.message }
 			
 			if ($return_value -ne 0) {
-				throw "Не удалось удалить приложение " + $app_name
+				throw "Не удалось удалить приложение $app_name." + ([String]::Join("`n", $output_data)) 
 			}
 		} catch {
 			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
@@ -347,6 +355,9 @@ function Uninstall-Program
  
  .Parameter UseOnlyInstallParams
   Использовать для установки только параметры из InstallParams.
+  
+ .Parameter Visible
+  Выводит окно установщика на рабочий стол удаленного компьютера.
   
  .Parameter Force
   Подавляет запрос на установку программы. Для дополнительных запросов можно использовать параметр Confirm.
@@ -412,6 +423,7 @@ function Install-Program()
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$UseOnlyInstallParams,
+		[switch]$Visible,
 		[switch]$Force
 	)
 	begin {}
@@ -438,6 +450,9 @@ function Install-Program()
 				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
 				Wait-InstallProgram $ComputerName
 				
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
+				if ($Visible) { $_cmd += "i" }
+				
 				if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
 					if (!$UseOnlyInstallParams) {
 						$params = "/quiet /norestart /qn"
@@ -448,13 +463,13 @@ function Install-Program()
 						$install_type = "/update"
 					}
 					
-					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -s \\$ComputerName msiexec $install_type `"$ProgSource`" $params $InstallParams"
+					$_cmd += " msiexec $install_type `"$ProgSource`" $params $InstallParams"
 				} else {
 					if (!$UseOnlyInstallParams) {
 						$params = "/S /silent /quiet /norestart /q /qn"
 					} 
 					
-					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName `"$ProgSource`" $params $InstallParams"
+					$_cmd += " `"$ProgSource`" $params $InstallParams"
 				}
 				Write-Verbose $_cmd
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
@@ -473,7 +488,7 @@ function Install-Program()
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
-			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения" + $ProgSource }
+			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
 			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $_.FullyQualifiedErrorId, $_.CategoryInfo.Category, $_.TargetObject)
