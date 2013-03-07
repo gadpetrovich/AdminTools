@@ -109,7 +109,24 @@ function ConvertTo-Encoding ([string]$From, [string]$To){
         $encTo.GetString($bytes)  
     }  
 }  
- 
+
+function Get-Property ()
+{
+	[cmdletbinding()]
+	param(
+	[Object[]]$Property = "*",
+	[parameter(ValueFromPipeline=$true)]
+	$InputObject
+	)
+	Process {
+		$InputObject | Select $Property | Get-Member -MemberType *Property | % {
+			$obj = "" | select Name, Value
+			$obj.Name = $_.Name
+			$obj.Value = $InputObject.($_.Name)
+			$obj 
+		}
+	}
+}
 
 <# 
  .Synopsis

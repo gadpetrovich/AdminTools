@@ -142,7 +142,7 @@ function Wait-WMIRestartComputer
 	Write-Verbose "Запуск ожидания отключения WMI, время: $before"
 	while(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue) {
 		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
-			Write-Error "Истекло время ожидания на остановку WMI."
+			Write-Error "Истекло время ожидания на остановку WMI"
 		}
 		Sleep $WaitSecPeriod
 	}
@@ -151,7 +151,7 @@ function Wait-WMIRestartComputer
 	Write-Verbose "Запуск ожидания включения WMI, время: $before"
 	while(-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
 		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
-			Write-Error "Истекло время ожидания на остановку WMI."
+			Write-Error "Истекло время ожидания на запуск WMI"
 		}
 		Sleep $WaitSecPeriod
 	}
