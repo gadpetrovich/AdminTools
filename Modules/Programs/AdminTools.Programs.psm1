@@ -176,7 +176,7 @@ function Wait-WMIRestartComputer
  .Parameter EmptyDefaultParams
   Убирает стандартные параметры удаления nsis и msiexec. Не влияет на программы, у которых есть параметр QuietUninstallKey.
   
- .Parameter Visible
+ .Parameter Interactive
   Выводит окно деинсталлятора на рабочий стол удаленного компьютера.
  
  .Parameter Force
@@ -238,7 +238,7 @@ function Uninstall-Program
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$EmptyDefaultParams,
-		[switch]$Visible,
+		[switch][Alias("Visible")]$Interactive,
 		[switch]$Force
 	)          
 	
@@ -271,7 +271,7 @@ function Uninstall-Program
 				$uninstall_key = $app.UninstallKey
 				
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
-				if ($Visible) { $_cmd += "i" }
+				if ($Interactive) { $_cmd += "i" }
 				
 				if ($app.QuietUninstallKey -ne $null) {
 					$quiet_uninstall_key = $app.QuietUninstallKey
@@ -356,7 +356,7 @@ function Uninstall-Program
  .Parameter UseOnlyInstallParams
   Использовать для установки только параметры из InstallParams.
   
- .Parameter Visible
+ .Parameter Interactive
   Выводит окно установщика на рабочий стол удаленного компьютера.
   
  .Parameter Force
@@ -399,7 +399,7 @@ function Uninstall-Program
 
    Описание
    -----------
-   Эта команда устанавливает программы, указанные в файле "remove_apps.csv".
+   Эта команда устанавливает программы, указанные в файле "install_apps.csv".
      
  .Link
    http://techibee.com/powershell/powershell-uninstall-software-on-remote-computer/1400
@@ -423,7 +423,7 @@ function Install-Program()
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$UseOnlyInstallParams,
-		[switch]$Visible,
+		[switch][Alias("Visible")]$Interactive,
 		[switch]$Force
 	)
 	begin {}
@@ -451,7 +451,7 @@ function Install-Program()
 				Wait-InstallProgram $ComputerName
 				
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
-				if ($Visible) { $_cmd += "i" }
+				if ($Interactive) { $_cmd += "i" }
 				
 				if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
 					if (!$UseOnlyInstallParams) {
