@@ -64,7 +64,7 @@ function Get-Program
 			$ErrorActionPreference = "Stop"
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
-				if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { continue }
+				if(!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { continue }
 				
 				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
 				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
@@ -253,7 +253,7 @@ function Uninstall-Program
 			}
 			
 			$return_value = -1
-			if(!(Test-Connection -ComputerName $ComputerName -Count 1 -ea 0)) { 
+			if(!(Test-Connection -ComputerName $ComputerName -Count 2 -ea 0)) { 
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
@@ -440,7 +440,7 @@ function Install-Program()
 				throw "Для установки приложения требуются права администратора"
 			}
 			
-			if(!(Test-Connection -ComputerName $ComputerName -Count 1 -ea 0)) { 
+			if(!(Test-Connection -ComputerName $ComputerName -Count 2 -ea 0)) { 
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
