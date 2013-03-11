@@ -48,12 +48,12 @@
 #>
 function Get-Program
 {
-	param(            
-		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]            
-		[string[]]$ComputerName = $env:computername,
+	param(
+		[parameter(position=0,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[string]$AppMatch = "",
+		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[string[]]$ComputerName = $env:computername
 		
-		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
-		[string]$AppMatch = ""
 	)            
 
 	begin {}            
@@ -194,7 +194,6 @@ function Wait-WMIRestartComputer
   EndTime   - окончание удаления
   
  .Notes
-  Удалить программу можно также с помощью Get-Program: (Get-Program 7-zip computername).Uninstall()
   
  .Example
    PS C:\> Get-Program testprogram | Uninstall-Program 
@@ -234,7 +233,7 @@ function Uninstall-Program
 	param (            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$EmptyDefaultParams,
@@ -252,8 +251,12 @@ function Uninstall-Program
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для удаления приложения требуются права администратора"
 			}
-
+			
 			$return_value = -1
+			if(!(Test-Connection -ComputerName $ComputerName -Count 1 -ea 0)) { 
+				throw "Компьютер $ComputerName не отвечает"
+			}
+			
 			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
 			if ($app -eq $null) {
 				throw "Приложения с GUID = $AppGUID нет в системе"
@@ -270,19 +273,18 @@ function Uninstall-Program
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
 				$uninstall_key = $app.UninstallKey
 				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
-				if ($Interactive) { $_cmd += "i" }
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+				if ($Interactive) { $_cmd += "-i " }
 				
 				if ($app.QuietUninstallKey -ne $null) {
-					$quiet_uninstall_key = $app.QuietUninstallKey
-					$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" -is \\$ComputerName $quiet_uninstall_key"
+					$_cmd += $app.QuietUninstallKey
 				} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
 					$params = "/x `"$AppGUID`" "
 					if (!$EmptyDefaultParams) {
 						$params += "/qn"
 					}
 					
-					$_cmd += " msiexec $params"
+					$_cmd += "msiexec $params"
 				} else {
 					if (!$EmptyDefaultParams) {
 						$params = "/S /x /silent /uninstall /qn /quiet /norestart"
@@ -292,7 +294,7 @@ function Uninstall-Program
 						$uninstall_key = $uninstall_key.Insert(0, '"')
 						$uninstall_key = $uninstall_key.Insert($i+5, '"')
 					}
-					$_cmd += " $uninstall_key $params"
+					$_cmd += "$uninstall_key $params"
 				}
 				Write-Verbose $_cmd
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
@@ -415,7 +417,7 @@ function Install-Program()
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$ProgSource, 
 		
-		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$ComputerName = $env:computername, 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
@@ -437,12 +439,21 @@ function Install-Program()
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для установки приложения требуются права администратора"
 			}
+			
+			if(!(Test-Connection -ComputerName $ComputerName -Count 1 -ea 0)) { 
+				throw "Компьютер $ComputerName не отвечает"
+			}
+			
 			# устанавливаем
 			$file = Get-Item $ProgSource
 			$params = ""
 			
 			Write-Verbose "Время запуска установки: $before_install_date"
 			$before_install_state = Get-Program -ComputerName $ComputerName
+			if ($before_install_state -eq $null) {
+				throw "Не удалось получить список программ из $ComputerName"
+			}
+			
 			if ($pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
 				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
 				
@@ -450,8 +461,8 @@ function Install-Program()
 				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
 				Wait-InstallProgram $ComputerName
 				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s"
-				if ($Interactive) { $_cmd += "i" }
+				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+				if ($Interactive) { $_cmd += "-i " }
 				
 				if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
 					if (!$UseOnlyInstallParams) {
@@ -463,13 +474,13 @@ function Install-Program()
 						$install_type = "/update"
 					}
 					
-					$_cmd += " msiexec $install_type `"$ProgSource`" $params $InstallParams"
+					$_cmd += "msiexec $install_type `"$ProgSource`" $params $InstallParams"
 				} else {
 					if (!$UseOnlyInstallParams) {
 						$params = "/S /silent /quiet /norestart /q /qn"
 					} 
 					
-					$_cmd += " `"$ProgSource`" $params $InstallParams"
+					$_cmd += "`"$ProgSource`" $params $InstallParams"
 				}
 				Write-Verbose $_cmd
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
