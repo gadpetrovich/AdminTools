@@ -41,7 +41,9 @@ function Get-OsInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_OperatingSystem -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -87,7 +89,9 @@ function Get-ComputerInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_ComputerSystem -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -133,7 +137,9 @@ function Get-BiosInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_Bios -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -194,7 +200,9 @@ function Get-LogicalDiskInfo
 			} else {
 				$obj = get-wmiobject -Class Win32_LogicalDisk -ComputerName $comp
 			}
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -251,7 +259,9 @@ function Get-DiskPartitionInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_DiskPartition -ComputerName $comp -Filter "$Filter"
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -296,7 +306,9 @@ function Get-DiskDriveInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_DiskDrive -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -341,7 +353,9 @@ function Get-ProcessorInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_Processor -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -386,7 +400,9 @@ function Get-MotherboardInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class win32_baseboard -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -431,7 +447,9 @@ function Get-OnBoardDeviceInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_OnBoardDevice -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -477,7 +495,9 @@ function Get-PhysicalMemoryInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_PhysicalMemory -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -524,7 +544,9 @@ function Get-SoundDeviceInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_SoundDevice -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -569,7 +591,9 @@ function Get-VideoControllerInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_VideoController -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -615,7 +639,9 @@ function Get-NetworkAdapterInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_NetworkAdapter -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -661,7 +687,9 @@ function Get-NetworkAdapterConfigurationInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_NetworkAdapterConfiguration -ComputerName $comp
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -716,7 +744,9 @@ function Get-ProcessInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_Process -ComputerName $comp -Filter "$Filter"
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}
@@ -770,7 +800,9 @@ function Get-ServiceInfo
 		foreach ($comp in $ComputerName)
 		{
 			$obj = get-wmiobject -Class Win32_Service -ComputerName $comp -Filter "$Filter"
-			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			if ($obj -ne $null) {
+				$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+			}
 			$obj
 		}
 	}

@@ -64,7 +64,9 @@ function Get-Program
 			$ErrorActionPreference = "Stop"
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
-				if(!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { continue }
+				if(!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
+					throw "Компьютер $ComputerName не отвечает"
+				}
 				
 				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
 				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
