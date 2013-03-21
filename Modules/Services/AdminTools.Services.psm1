@@ -99,6 +99,7 @@ function Start-RemoteService
 			}
 		}
 		try {
+			$prev_er_action = $ErrorActionPreference
 			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
@@ -127,9 +128,9 @@ function Start-RemoteService
 			
 			
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-			$pscmdlet.WriteError($er)
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 		}
 	}
 	end{}
@@ -233,6 +234,7 @@ function Stop-RemoteService
 		}
 		
 		try {
+			$prev_er_action = $ErrorActionPreference
 			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
@@ -260,9 +262,9 @@ function Stop-RemoteService
 			}
 			
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-			$pscmdlet.WriteError($er)
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 			
 		}
 	}

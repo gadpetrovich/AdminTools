@@ -23,6 +23,7 @@ function Add-UserToAdmin
 	)
 
 	try {
+		$prev_er_action = $ErrorActionPreference
 		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
@@ -39,9 +40,9 @@ function Add-UserToAdmin
 			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
 		}
 	} catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-		$pscmdlet.WriteError($er)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 	}
 }
 
@@ -57,6 +58,7 @@ function Remove-UserFromAdmin
 	)
 	
 	try {
+		$prev_er_action = $ErrorActionPreference
 		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
@@ -73,9 +75,9 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-		$pscmdlet.WriteError($er)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 	}
 }
 
@@ -88,6 +90,7 @@ function Get-AdminUsers
 	)
 
 	try {
+		$prev_er_action = $ErrorActionPreference
 		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
@@ -108,8 +111,8 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-		$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-		$pscmdlet.WriteError($er)
+		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 	}
 }
