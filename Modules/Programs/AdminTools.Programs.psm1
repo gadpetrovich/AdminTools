@@ -61,6 +61,7 @@ function Get-Program
 	process {            
 		try
 		{
+			$prev_er_action = $ErrorActionPreference
 			$ErrorActionPreference = "Stop"
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
@@ -109,9 +110,11 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  $_.InvocationInfo.PositionMessage)
-			$pscmdlet.WriteError($er)
+			write-error ($_.tostring() + 
+				"`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  
+				$_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 		}
 	}            
 
@@ -258,6 +261,7 @@ function Uninstall-Program
 		$app_name = ""
 		$output_data = ""
 		try {
+			$prev_er_action = $ErrorActionPreference
 			$ErrorActionPreference = "Stop"
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
@@ -329,9 +333,10 @@ function Uninstall-Program
 				throw "Не удалось удалить приложение $app_name." + ([String]::Join("`n", $output_data)) 
 			}
 		} catch {
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-			$pscmdlet.WriteError($er)
+			if ($exit_code -eq 0) {	$exit_code = -1 }
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 		} finally {
 			
 			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
@@ -446,6 +451,7 @@ function Install-Program()
 		$output_data = ""
 		$before_install_date = Get-Date
 		try {
+			$prev_er_action = $ErrorActionPreference
 			$ErrorActionPreference = "Stop"
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
@@ -514,9 +520,9 @@ function Install-Program()
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			$er = New-Object System.Management.Automation.ErrorRecord($_.Exception, $null, $_.CategoryInfo.Category, $_.TargetObject)
-			$er.ErrorDetails = New-Object System.Management.Automation.ErrorDetails($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage)
-			$pscmdlet.WriteError($er)
+			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
+				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
+				-ErrorAction $prev_er_action
 		} finally {
 		
 			if ($diff) {
