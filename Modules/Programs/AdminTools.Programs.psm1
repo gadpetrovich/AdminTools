@@ -61,8 +61,6 @@ function Get-Program
 	process {            
 		try
 		{
-			$prev_er_action = $ErrorActionPreference
-			$ErrorActionPreference = "Stop"
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
 				if(!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
@@ -71,6 +69,7 @@ function Get-Program
 				
 				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
 				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+				#http://support.microsoft.com/kb/892192/ru
 				if ($HKLM.OpenSubKey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall") -ne $null) {
 					$UninstallRegKeys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 				}
@@ -110,11 +109,7 @@ function Get-Program
 				$HKLM.Close()
 			}            
 		} catch {
-			write-error ($_.tostring() + 
-				"`nВозможно у вас нет права доступа к удаленному реестру:  http://support.microsoft.com/kb/892192/ru`n" +  
-				$_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+			throw $_
 		}
 	}            
 
@@ -141,36 +136,39 @@ function Wait-WMIRestartComputer
 		[parameter(position=2,ValueFromPipelineByPropertyName=$true)]
 		[int]$SecTimeout = 300
 	)
-
-	$before = Get-Date
-	# ждем, когда wmi вырубится
-	Write-Verbose "Запуск ожидания отключения WMI, время: $before"
-	while($true) {
-		try {
-			if (-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
-				break
+	try {
+		$before = Get-Date
+		# ждем, когда wmi вырубится
+		Write-Verbose "Запуск ожидания отключения WMI, время: $before"
+		while($true) {
+			try {
+				if (-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
+					break
+				}
+			} catch { }
+			if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+				throw "Истекло время ожидания на остановку WMI"
 			}
-		} catch { }
-		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
-			Write-Error "Истекло время ожидания на остановку WMI"
+			Sleep $WaitSecPeriod
 		}
-		Sleep $WaitSecPeriod
-	}
-	$before = Get-Date
-	# ждем, когда wmi заработает
-	Write-Verbose "Запуск ожидания включения WMI, время: $before"
-	while($true) {
-		try {
-			if (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue) {
-				break
+		$before = Get-Date
+		# ждем, когда wmi заработает
+		Write-Verbose "Запуск ожидания включения WMI, время: $before"
+		while($true) {
+			try {
+				if (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue) {
+					break
+				}
+			} catch { }
+			if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+				throw "Истекло время ожидания на запуск WMI"
 			}
-		} catch { }
-		if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
-			Write-Error "Истекло время ожидания на запуск WMI"
+			Sleep $WaitSecPeriod
 		}
-		Sleep $WaitSecPeriod
+		Write-Verbose "Перезагрузка завершена: $(Get-Date)"
+	} catch {
+		throw $_
 	}
-	Write-Verbose "Перезагрузка завершена: $(Get-Date)"
 }
 
 
@@ -259,10 +257,8 @@ function Uninstall-Program
 	begin {}
 	process {
 		$app_name = ""
-		$output_data = ""
+		$output_data = @("")
 		try {
-			$prev_er_action = $ErrorActionPreference
-			$ErrorActionPreference = "Stop"
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для удаления приложения требуются права администратора"
@@ -282,7 +278,6 @@ function Uninstall-Program
 			$before_uninstall_date = Get-Date
 			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and 
 				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))) {
-				# проверяем, запущены ли процессы установки/удаления
 				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; 
 				Wait-InstallProgram $ComputerName
 				# удаляем
@@ -313,10 +308,11 @@ function Uninstall-Program
 					$_cmd += "$uninstall_key $params"
 				}
 				Write-Verbose $_cmd
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				try {
+					$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				} catch {}
 				$return_value = $LastExitCode
 				
-				# ждем завершения
 				Write-Verbose "Ждем, когда завершатся процессы удаления"
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения удаления: $(Get-Date)"
@@ -334,9 +330,7 @@ function Uninstall-Program
 			}
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+			throw $_
 		} finally {
 			
 			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
@@ -448,11 +442,9 @@ function Install-Program()
 	begin {}
 	process {
 		$exit_code = 0
-		$output_data = ""
+		$output_data = @("")
 		$before_install_date = Get-Date
 		try {
-			$prev_er_action = $ErrorActionPreference
-			$ErrorActionPreference = "Stop"
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для установки приложения требуются права администратора"
@@ -475,7 +467,6 @@ function Install-Program()
 			if ($pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
 				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
 				
-				# проверяем, запущены ли процессы установки/удаления
 				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
 				Wait-InstallProgram $ComputerName
 				
@@ -501,10 +492,11 @@ function Install-Program()
 					$_cmd += "`"$ProgSource`" $params $InstallParams"
 				}
 				Write-Verbose $_cmd
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				try {
+					$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				} catch {}
 				$exit_code = $LastExitCode
 				
-				#ждем завершения
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения установки: $(Get-Date)"
 			}
@@ -520,9 +512,7 @@ function Install-Program()
 			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+			throw $_
 		} finally {
 		
 			if ($diff) {

@@ -87,7 +87,7 @@ function Start-RemoteService
 							$respond = Get-Service -ComputerName $computer -Name $s.Name
 							$result = $respond.Status
 						} catch {
-							Write-Error ("Не удалось запустить службу: " + $_)
+							throw ("Не удалось запустить службу: " + $_)
 						}
 					}
 				}
@@ -99,8 +99,6 @@ function Start-RemoteService
 			}
 		}
 		try {
-			$prev_er_action = $ErrorActionPreference
-			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
 				"ServiceControllers" { 
@@ -128,9 +126,7 @@ function Start-RemoteService
 			
 			
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+			throw $_
 		}
 	}
 	end{}
@@ -221,7 +217,7 @@ function Stop-RemoteService
 							$respond = Get-Service -ComputerName $computer -Name $s.Name
 							$result = $respond.Status
 						} catch {
-							Write-Error ("Не удалось остановить службу: " + $_)
+							throw ("Не удалось остановить службу: " + $_)
 						}
 					}
 				}
@@ -234,8 +230,6 @@ function Stop-RemoteService
 		}
 		
 		try {
-			$prev_er_action = $ErrorActionPreference
-			$ErrorActionPreference = "Stop"
 			switch ($PsCmdlet.ParameterSetName) 
 			{ 
 				"ServiceControllers" { 
@@ -262,9 +256,7 @@ function Stop-RemoteService
 			}
 			
 		} catch {
-			write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+			throw $_
 			
 		}
 	}

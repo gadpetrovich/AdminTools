@@ -23,8 +23,6 @@ function Add-UserToAdmin
 	)
 
 	try {
-		$prev_er_action = $ErrorActionPreference
-		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
@@ -40,9 +38,7 @@ function Add-UserToAdmin
 			throw "Пользователь $UserName уже добавлен в список локальных администраторов"
 		}
 	} catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+		throw $_
 	}
 }
 
@@ -58,8 +54,6 @@ function Remove-UserFromAdmin
 	)
 	
 	try {
-		$prev_er_action = $ErrorActionPreference
-		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
@@ -75,9 +69,7 @@ function Remove-UserFromAdmin
 			throw "Пользователь $UserName отсутствует в списке локальных администраторов"
 		}
     } catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+		throw $_
 	}
 }
 
@@ -90,8 +82,6 @@ function Get-AdminUsers
 	)
 
 	try {
-		$prev_er_action = $ErrorActionPreference
-		$ErrorActionPreference = "Stop"
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
@@ -111,8 +101,6 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		write-error ($_.tostring() + "`n" +  $_.InvocationInfo.PositionMessage) `
-				-CategoryReason $_.CategoryInfo -ErrorId $_.FullyQualifiedErrorId `
-				-ErrorAction $prev_er_action
+		throw $_
 	}
 }
