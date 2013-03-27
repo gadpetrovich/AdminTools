@@ -116,14 +116,38 @@ function Get-Program
 	end {}
 }
 
-function Wait-InstallProgram ([string]$ComputerName = $env:computername)
+function Wait-InstallProgram 
 {
-	$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-	if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
-	while (
-		@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
-		(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst)" })
-	){ Sleep 2 }
+	param(
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
+		[string]$ComputerName = $env:computername, 
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
+		[int]$WaitSecPeriod = 7,
+		[parameter(position=2,ValueFromPipelineByPropertyName=$true)]
+		[int]$SecTimeout = 6000
+	)
+	try {
+		$before = Get-Date
+		Write-Verbose "Запуск ожидания установки/удаления программы, время: $before"
+		$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
+		if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
+		while ( $true )
+		{ 
+			Sleep $WaitSecPeriod
+			if (-not (
+				@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
+				(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst|wusa)" }) 
+			)) {
+				break
+			}
+			if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+				throw "Истекло время ожидания установки/удаления программы"
+			}
+		}
+		Write-Verbose "Завершение ожидания установки/удаления программы, время: $(Get-Date)"
+	} catch {
+		throw $_
+	}
 }
 
 function Wait-WMIRestartComputer
@@ -278,7 +302,6 @@ function Uninstall-Program
 			$before_uninstall_date = Get-Date
 			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and 
 				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))) {
-				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере"; 
 				Wait-InstallProgram $ComputerName
 				# удаляем
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
@@ -313,7 +336,6 @@ function Uninstall-Program
 				} catch {}
 				$return_value = $LastExitCode
 				
-				Write-Verbose "Ждем, когда завершатся процессы удаления"
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения удаления: $(Get-Date)"
 			} else {
@@ -338,7 +360,9 @@ function Uninstall-Program
 			$OutputObj.AppGUID = $AppGUID
 			$OutputObj.AppName = $app_name
 			$OutputObj.ReturnValue = $return_value
-			$OutputObj.Text = $output_data[$output_data.Count-1]
+			if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+				$OutputObj.Text = $output_data[$output_data.Count-1]
+			}
 			$OutputObj.EventMessage = $event_message
 			$OutputObj.StartTime = $before_uninstall_date.ToString()
 			$OutputObj.EndTime = (Get-Date).ToString()
@@ -467,7 +491,6 @@ function Install-Program()
 			if ($pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
 				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
 				
-				Write-Verbose "Ждем, когда завершатся процессы установки/удаления, запущенные ранее на этом компьютере";
 				Wait-InstallProgram $ComputerName
 				
 				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
@@ -484,6 +507,13 @@ function Install-Program()
 					}
 					
 					$_cmd += "msiexec $install_type `"$ProgSource`" $params $InstallParams"
+				} elseif ($file.Extension -ieq ".msu") {
+					if (!$UseOnlyInstallParams) {
+						$params = "/quiet /norestart"
+					}
+					
+					$_cmd += "wusa `"$ProgSource`" $params $InstallParams"
+					#ошибка 3010 сигнализирует о необходимости перезагрузки компьютера
 				} else {
 					if (!$UseOnlyInstallParams) {
 						$params = "/S /silent /quiet /norestart /q /qn"
@@ -509,7 +539,7 @@ function Install-Program()
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
-			if ($exit_code -ne 0) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
+			if ($exit_code -ne 0 -and $exit_code -ne 3010) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
 			throw $_
@@ -522,8 +552,9 @@ function Install-Program()
 					$OutputObj.ProgSource = $ProgSource
 					$OutputObj.ReturnValue = $exit_code
 					$OutputObj.EventMessage = $event_message
-					$OutputObj.OutputData = $output_data[$output_data.Count-1]
-					
+					if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+						$OutputObj.OutputData = $output_data[$output_data.Count-1]
+					}
 					$OutputObj.AppName = $i.AppName
 					$OutputObj.AppVersion = $i.AppVersion
 					$OutputObj.AppVendor = $i.AppVendor
@@ -538,7 +569,9 @@ function Install-Program()
 				$OutputObj.ProgSource = $ProgSource
 				$OutputObj.ReturnValue = $exit_code
 				$OutputObj.EventMessage = $event_message
-				$OutputObj.OutputData = $output_data[$output_data.Count-1]
+				if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+					$OutputObj.OutputData = $output_data[$output_data.Count-1]
+				}
 				$OutputObj.StartTime = $before_install_date.ToString()
 				$OutputObj.EndTime = (Get-Date).ToString()
 			
