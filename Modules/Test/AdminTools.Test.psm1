@@ -114,8 +114,8 @@ function Get-Property ()
 {
 	[cmdletbinding()]
 	param(
-	[Object[]]$Property = "*",
-	[parameter(ValueFromPipeline=$true)]
+		[Object[]]$Property = "*",
+		[parameter(ValueFromPipeline=$true)]
 	$InputObject
 	)
 	Process {
@@ -125,6 +125,27 @@ function Get-Property ()
 			$obj.Value = $InputObject.($_.Name)
 			$obj 
 		}
+	}
+}
+
+
+function Start-ProgressSleep
+{
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true)]
+		[int]$Seconds,
+		[parameter(ValueFromPipeline=$true)]
+		[string]$Activity
+	)
+	Process {
+		$j = 0;
+		for ($i = $Seconds; $i -gt 0; $i--) { 
+			Write-Progress -Activity $Activity -Status "Осталось секунд: $i" -PercentComplete `
+				(($Seconds - $i) / ($Seconds - 1) * 100);
+			sleep 1 
+		}; 
+		Write-Progress  -Activity $Activity -Status "Выход" -Completed
 	}
 }
 
