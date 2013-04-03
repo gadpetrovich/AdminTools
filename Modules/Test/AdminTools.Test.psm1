@@ -116,7 +116,7 @@ function Get-Property ()
 	param(
 		[Object[]]$Property = "*",
 		[parameter(ValueFromPipeline=$true)]
-	$InputObject
+		$InputObject
 	)
 	Process {
 		$InputObject | Select $Property | Get-Member -MemberType *Property | % {
@@ -133,16 +133,16 @@ function Start-ProgressSleep
 {
 	[cmdletbinding()]
 	param(
-		[parameter(ValueFromPipeline=$true)]
+		[parameter(Mandatory=$true, ValueFromPipeline=$true)]
 		[int]$Seconds,
-		[parameter(ValueFromPipeline=$true)]
+		[parameter(Mandatory=$true, ValueFromPipeline=$true)]
 		[string]$Activity
 	)
 	Process {
 		$j = 0;
-		for ($i = $Seconds; $i -gt 0; $i--) { 
+		for ($i = $Seconds; $i -ge 0; $i--) { 
 			Write-Progress -Activity $Activity -Status "Осталось секунд: $i" -PercentComplete `
-				(($Seconds - $i) / ($Seconds - 1) * 100);
+				(($Seconds - $i) / ($Seconds) * 100);
 			sleep 1 
 		}; 
 		Write-Progress  -Activity $Activity -Status "Выход" -Completed

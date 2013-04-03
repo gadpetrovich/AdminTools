@@ -136,7 +136,7 @@ function Wait-InstallProgram
 			Sleep $WaitSecPeriod
 			if (-not (
 				@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
-				(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst|wusa)" }) 
+				(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst|wusa|setup)" }) 
 			)) {
 				break
 			}
@@ -535,7 +535,7 @@ function Install-Program()
 			$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
 			
 			Write-Verbose "Получаем список событий, связанных с установкой"
-			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date)
+			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
 			$event_message = @()
 			foreach($i in $events) { $event_message += $i.message }
 			
