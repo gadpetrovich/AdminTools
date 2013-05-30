@@ -8,5 +8,5 @@ Set-Alias Add-Program Install-Program
 Set-Alias Remove-Program Uninstall-Program
 Set-Alias fta		Format-TableAuto 
 Set-Alias ul		Update-Length
-
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Set-Alias Get-NetObject Get-NetView
+Export-ModuleMember -Alias * -Function [a-z]* -Cmdlet *

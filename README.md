@@ -21,6 +21,10 @@ Update-Length - Преобразует параметр Length в читаемы
 
 Get-Program - Возварщает список установленных программ.
 
+Wait-InstallProgram
+
+Wait-WMIRestartComputer
+
 Uninstall-Program - Удаляет указанную программу.
 
 Install-Program - Устанавливает программу из указанного источника.
@@ -35,9 +39,17 @@ Stop-RemoteService - Останавливает службы на удаленн
 
 Skip-Null
 
-Get-NetObject
+Get-NetView
 
 Format-TableAuto
+
+New-PInvoke
+
+ConvertTo-Encoding
+
+Get-Property
+
+Start-ProgressSleep
 
 Join-Object - Объединяет два списка в один.
 
@@ -46,6 +58,8 @@ Join-Object - Объединяет два списка в один.
 Add-UserToAdmin
 
 Remove-UserFromAdmin
+
+Get-AdminUsers
 
 ### WMI
 
@@ -84,3 +98,5 @@ Get-NetworkAdapterConfigurationInfo - Список настроек сетевы
 *   Add-Program - Install-Program
 *   Remove-Program - Uninstall-Program
 *   fta - Format-TableAuto
+*	Get-NetObject - Get-NetView
+*	ul - Update-Length

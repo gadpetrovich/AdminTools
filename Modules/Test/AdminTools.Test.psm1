@@ -3,7 +3,7 @@
 # $null | Skip-Null | % { ... } 
 filter Skip-Null { $_|?{ $_ -ne $null } }
 
-function Get-NetObject([string]$Match)
+function Get-NetView([string]$Match)
 {
     $objs = net view 
 	$o2 = $objs | select -skip 3 -first ($objs.length-5) | ? { $_ -imatch $Match } # убрали лишние строки 

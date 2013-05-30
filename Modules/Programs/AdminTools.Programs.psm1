@@ -13,14 +13,15 @@
   Регулярное выражения для поиска программы по ее названию. Может использоваться для перадачи объектов по конвейеру.
 
  .Outputs
-  Возвращаемые поля:
-  AppName
-  AppVersion
-  AppVendor
-  InstalledDate
-  UninstallKey
-  QuietUninstallKey
-  AppGUID
+  PSObject. Содержит следующие параметры
+  [string]AppName
+  [string]AppVersion
+  [string]AppVendor
+  [DateTime]InstalledDate
+  [string]InstallLocation
+  [string]UninstallKey
+  [string]QuietUninstallKey
+  [string]AppGUID
   
  .Example
    PS C:\> Get-Program
@@ -58,7 +59,57 @@ function Get-Program
 
 	begin {}            
 
-	process {            
+	process {    
+		
+		function get_installed_date($AppDetails, $Computer) {
+			
+			$AppInstalledDate = $AppDetails.GetValue("InstallDate")
+			if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
+					$AppInstalledDate.Length -eq 8) {
+				$Year = $AppInstalledDate.Substring(0,4)
+				$Month = $AppInstalledDate.Substring(4,2)
+				$Day = $AppInstalledDate.Substring(6,2)
+				return New-Object DateTime($Year, $Month, $Day)	
+			}
+			
+		}
+		
+		function get_application($AppRegistryKey)
+		{
+			$AppDetails = $HKLM.OpenSubKey($AppRegistryKey)
+			
+			$AppDisplayName  = $AppDetails.GetValue("DisplayName")
+			if($AppDisplayName -notmatch $AppMatch ) { return }
+			if(!$AppDisplayName) { return }
+			
+			$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, `
+				InstallLocation, UninstallKey, QuietUninstallKey, AppGUID
+			$OutputObj.ComputerName = $Computer.ToUpper()
+			$OutputObj.AppName = $AppDisplayName
+			$OutputObj.AppVersion = $AppDetails.GetValue("DisplayVersion")
+			$OutputObj.AppVendor = $AppDetails.GetValue("Publisher")
+			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer
+			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
+			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
+			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
+			$OutputObj.AppGUID = $App
+			$OutputObj
+			
+			$AppDetails.Close()
+		}
+		
+		function get_applications($UninstallRegKey) {
+			#http://support.microsoft.com/kb/892192/ru
+			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)     
+			if ($UninstallRef -eq $null) { return }
+			$Applications = $UninstallRef.GetSubKeyNames()
+
+			foreach ($App in $Applications) {
+				get_application "$UninstallRegKey\\$App"
+			}
+			$UninstallRef.Close()
+		}
+		
 		try
 		{
 			foreach($Computer in $ComputerName) {            
@@ -67,45 +118,14 @@ function Get-Program
 					throw "Компьютер $ComputerName не отвечает"
 				}
 				
-				$HKLM   = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
-				$UninstallRegKeys=@("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
-				#http://support.microsoft.com/kb/892192/ru
-				if ($HKLM.OpenSubKey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall") -ne $null) {
-					$UninstallRegKeys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+				$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
+				$keys = @()
+				$keys += "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+				$keys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+				#$keys += "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Products"
+				foreach ($key in $keys) {
+					get_applications $key
 				}
-				foreach ($UninstallRegKey in $UninstallRegKeys)
-				{
-					$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)            
-					$Applications = $UninstallRef.GetSubKeyNames()            
-
-					foreach ($App in $Applications) {            
-						$AppRegistryKey  = $UninstallRegKey + "\\" + $App            
-						$AppDetails   = $HKLM.OpenSubKey($AppRegistryKey)            
-						
-						$AppDisplayName  = $($AppDetails.GetValue("DisplayName"))    
-						if($AppDisplayName -notmatch $AppMatch ) { continue; }
-						
-						$AppVersion   = $($AppDetails.GetValue("DisplayVersion"))            
-						$AppPublisher  = $($AppDetails.GetValue("Publisher"))            
-						$AppInstalledDate = $($AppDetails.GetValue("InstallDate"))            
-						$AppUninstall  = $($AppDetails.GetValue("UninstallString"))
-						$AppQuietUninstall  = $($AppDetails.GetValue("QuietUninstallString"))            
-						$AppGUID = $App            
-						if(!$AppDisplayName) { continue }            
-						$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, UninstallKey, QuietUninstallKey, AppGUID
-						$OutputObj.ComputerName = $Computer.ToUpper()            
-						$OutputObj.AppName = $AppDisplayName            
-						$OutputObj.AppVersion = $AppVersion            
-						$OutputObj.AppVendor = $AppPublisher            
-						$OutputObj.InstalledDate = $AppInstalledDate            
-						$OutputObj.UninstallKey = $AppUninstall            
-						$OutputObj.QuietUninstallKey = $AppQuietUninstall 
-						$OutputObj.AppGUID = $AppGUID            
-						$OutputObj# | Select ComputerName, DriveName            
-						
-						$AppDetails.Close()
-					}
-				}	
 				$HKLM.Close()
 			}            
 		} catch {
@@ -158,22 +178,26 @@ function Wait-WMIRestartComputer
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
 		[int]$WaitSecPeriod = 10, 
 		[parameter(position=2,ValueFromPipelineByPropertyName=$true)]
-		[int]$SecTimeout = 300
+		[int]$SecTimeout = 300,
+		[parameter(position=3)]
+		[switch]$DontWaitShutdown
 	)
 	try {
-		$before = Get-Date
-		# ждем, когда wmi вырубится
-		Write-Verbose "Запуск ожидания отключения WMI, время: $before"
-		while($true) {
-			try {
-				if (-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
-					break
+		if (!$DontWaitShutdown) {
+			$before = Get-Date
+			# ждем, когда wmi вырубится
+			Write-Verbose "Запуск ожидания отключения WMI, время: $before"
+			while($true) {
+				try {
+					if (-not (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) {
+						break
+					}
+				} catch { }
+				if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
+					throw "Истекло время ожидания на остановку WMI"
 				}
-			} catch { }
-			if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
-				throw "Истекло время ожидания на остановку WMI"
+				Sleep $WaitSecPeriod
 			}
-			Sleep $WaitSecPeriod
 		}
 		$before = Get-Date
 		# ждем, когда wmi заработает
@@ -221,14 +245,14 @@ function Wait-WMIRestartComputer
  
  .Outputs
   PSObject. Содержит следующие параметры
-  ComputerName - имя компьютера
-  AppName      - имя программы
-  AppGUID      - GUID приложения
-  ReturnValue  - результат выполнения
-  Text         - результат выполнения в текстовом виде
-  EventMessage - сообщение от MsiInstaller'а
-  StartTime - начало удаления
-  EndTime   - окончание удаления
+  [string]ComputerName - имя компьютера
+  [string]AppName      - имя программы
+  [string]AppGUID      - GUID приложения
+  [int]ReturnValue  - результат выполнения
+  [string[]]Text         - результат выполнения в текстовом виде
+  [Object[]]EventMessage - сообщения от MsiInstaller'а
+  [DateTime]StartTime - начало удаления
+  [DateTime]EndTime   - окончание удаления
   
  .Notes
   
@@ -280,6 +304,44 @@ function Uninstall-Program
 	
 	begin {}
 	process {
+		function get_cmd() {
+			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+			if ($Interactive) { $_cmd += "-i " }
+			
+			if ($app.QuietUninstallKey -ne $null) {
+				$_cmd += $app.QuietUninstallKey
+			} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
+				$params = "/x `"$AppGUID`" "
+				if (!$EmptyDefaultParams) {
+					$params += "/qn"
+				}
+				
+				$_cmd += "msiexec $params"
+			} else {
+				if (!$EmptyDefaultParams) {
+					$params = "/S /x /silent /uninstall /qn /quiet /norestart"
+				} 
+				if ($uninstall_key.IndexOf('"') -eq -1 -and $uninstall_key.Split().Count -gt 1) {
+					$match = [regex]::Match($uninstall_key, ".*\.\w*")
+					$uninstall_key = $uninstall_key.Insert(0, '"')
+					$uninstall_key = $uninstall_key.Insert($match.Length, '"')
+				}
+				$_cmd += "$uninstall_key $params"
+			}
+			return $_cmd
+		}
+		
+		function remove_app() {
+			$uninstall_key = $app.UninstallKey
+			
+			$_cmd = get_cmd
+			Write-Verbose $_cmd
+			try {
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+			} catch {}
+			$return_value = $LastExitCode
+		}
+		
 		$app_name = ""
 		$output_data = @("")
 		try {
@@ -303,39 +365,8 @@ function Uninstall-Program
 			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and 
 				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))) {
 				Wait-InstallProgram $ComputerName
-				# удаляем
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
-				$uninstall_key = $app.UninstallKey
-				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
-				if ($Interactive) { $_cmd += "-i " }
-				
-				if ($app.QuietUninstallKey -ne $null) {
-					$_cmd += $app.QuietUninstallKey
-				} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
-					$params = "/x `"$AppGUID`" "
-					if (!$EmptyDefaultParams) {
-						$params += "/qn"
-					}
-					
-					$_cmd += "msiexec $params"
-				} else {
-					if (!$EmptyDefaultParams) {
-						$params = "/S /x /silent /uninstall /qn /quiet /norestart"
-					} 
-					if ($uninstall_key.IndexOf('"') -eq -1 -and $uninstall_key.Split().Count -gt 1) {
-						$i = $uninstall_key.IndexOf(".exe")
-						$uninstall_key = $uninstall_key.Insert(0, '"')
-						$uninstall_key = $uninstall_key.Insert($i+5, '"')
-					}
-					$_cmd += "$uninstall_key $params"
-				}
-				Write-Verbose $_cmd
-				try {
-					$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
-				} catch {}
-				$return_value = $LastExitCode
-				
+				remove
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения удаления: $(Get-Date)"
 			} else {
@@ -401,17 +432,17 @@ function Uninstall-Program
   
  .Outputs
   PSObject. Содержит следующие параметры
-  ComputerName - имя компьютера
-  ProgSource   - файл инсталлятора
-  AppName      - имя программы
-  AppVersion   - версия приложения
-  AppGUID      - GUID приложения
-  AppVendor    - вендор
-  ReturnValue  - результат выполнения
-  EventMessage - сообщение от MsiInstaller'а
-  OutputData   - текст, выводимый установщиком в стандартный поток вывода 
-  StartTime - начало установки
-  EndTime   - окончание установки
+  [string]ComputerName - имя компьютера
+  [string]ProgSource   - файл инсталлятора
+  [string]AppName      - имя программы
+  [string]AppVersion   - версия приложения
+  [string]AppGUID      - GUID приложения
+  [string]AppVendor    - вендор
+  [int]ReturnValue  - результат выполнения
+  [object[]]EventMessage - сообщения от MsiInstaller'а
+  [string[]]OutputData   - текст, выводимый установщиком в стандартный поток вывода 
+  [DateTime]StartTime - начало установки
+  [DateTime]EndTime   - окончание установки
   
  .Example
    PS C:\> Install-Program testprogram
@@ -465,6 +496,46 @@ function Install-Program()
 	)
 	begin {}
 	process {
+		function get_cmd() {
+			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+			if ($Interactive) { $_cmd += "-i " }
+			
+			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
+				if (!$UseOnlyInstallParams) {
+					$params = "/quiet /norestart /qn"
+				}
+				if ($file.Extension -ieq ".msi") {
+					$install_type = "/i"
+				} else {
+					$install_type = "/update"
+				}
+				
+				$_cmd += "msiexec $install_type `"$ProgSource`" $params $InstallParams"
+			} elseif ($file.Extension -ieq ".msu") {
+				if (!$UseOnlyInstallParams) {
+					$params = "/quiet /norestart"
+				}
+				
+				$_cmd += "wusa `"$ProgSource`" $params $InstallParams"
+				#ошибка 3010 сигнализирует о необходимости перезагрузки компьютера
+			} else {
+				if (!$UseOnlyInstallParams) {
+					$params = "/S /silent /quiet /norestart /q /qn"
+				} 
+				
+				$_cmd += "`"$ProgSource`" $params $InstallParams"
+			}
+		}
+		
+		function add_program() {
+			$_cmd = get_cmd
+			Write-Verbose $_cmd
+			try {
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+			} catch {}
+			$exit_code = $LastExitCode
+		}
+		
 		$exit_code = 0
 		$output_data = @("")
 		$before_install_date = Get-Date
@@ -482,7 +553,7 @@ function Install-Program()
 			$file = Get-Item $ProgSource
 			$params = ""
 			
-			Write-Verbose "Время запуска установки: $before_install_date"
+			
 			$before_install_state = Get-Program -ComputerName $ComputerName
 			if ($before_install_state -eq $null) {
 				throw "Не удалось получить список программ из $ComputerName"
@@ -492,41 +563,8 @@ function Install-Program()
 				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
 				
 				Wait-InstallProgram $ComputerName
-				
-				$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
-				if ($Interactive) { $_cmd += "-i " }
-				
-				if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
-					if (!$UseOnlyInstallParams) {
-						$params = "/quiet /norestart /qn"
-					}
-					if ($file.Extension -ieq ".msi") {
-						$install_type = "/i"
-					} else {
-						$install_type = "/update"
-					}
-					
-					$_cmd += "msiexec $install_type `"$ProgSource`" $params $InstallParams"
-				} elseif ($file.Extension -ieq ".msu") {
-					if (!$UseOnlyInstallParams) {
-						$params = "/quiet /norestart"
-					}
-					
-					$_cmd += "wusa `"$ProgSource`" $params $InstallParams"
-					#ошибка 3010 сигнализирует о необходимости перезагрузки компьютера
-				} else {
-					if (!$UseOnlyInstallParams) {
-						$params = "/S /silent /quiet /norestart /q /qn"
-					} 
-					
-					$_cmd += "`"$ProgSource`" $params $InstallParams"
-				}
-				Write-Verbose $_cmd
-				try {
-					$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
-				} catch {}
-				$exit_code = $LastExitCode
-				
+				Write-Verbose "Время запуска установки: $before_install_date"
+				add_program
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения установки: $(Get-Date)"
 			}
