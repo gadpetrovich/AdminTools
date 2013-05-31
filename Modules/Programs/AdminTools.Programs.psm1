@@ -72,6 +72,43 @@ function Get-Program
 				return New-Object DateTime($Year, $Month, $Day)	
 			}
 			
+			# $files = @()
+			
+			# $InstallLocation = $AppDetails.GetValue("InstallLocation")
+			# if (![String]::IsNullOrEmpty($InstallLocation)) {
+				# $files += $InstallLocation
+			# }
+			
+			# $DisplayIcon = $AppDetails.GetValue("DisplayIcon")
+			# if (![String]::IsNullOrEmpty($DisplayIcon)) {
+				# $files += $DisplayIcon.Split(',')[0].Trim(' "')
+			# }
+			
+			# $UninstallString = $AppDetails.GetValue("UninstallString")
+			# $Default = $AppDetails.GetValue("")
+			# if (![String]::IsNullOrEmpty($UninstallString) -and [String]::IsNullOrEmpty($Default)) {
+				# if ($UninstallString.IndexOf('"') -gt -1) {
+					# $UninstallString = $UninstallString.Split('"')[1]
+				# }
+				# if ($UninstallString.Split().Count -gt 1) {
+					# $UninstallString = ([regex]::Match($UninstallString, ".*\.\w*")).Value
+				# }
+				# $files += $UninstallString
+			# }
+			
+			# foreach ($file_name in $files) {
+				# $disk = $file_name[0]
+				# $remote_tester = $file_name.Replace("$Disk`:", "\\$Computer\$Disk`$")
+				
+				# if ((Test-Path $remote_tester)) {
+					# $item = Get-Item $remote_tester
+					# if ($item.CreationTime -gt $item.LastWriteTime) {
+						# return $item.CreationTime
+					# } else {
+						# return $item.LastWriteTime
+					# }
+				# }
+			# }
 		}
 		
 		function get_application($AppRegistryKey)
@@ -525,6 +562,7 @@ function Install-Program()
 				
 				$_cmd += "`"$ProgSource`" $params $InstallParams"
 			}
+			return $_cmd
 		}
 		
 		function add_program() {
