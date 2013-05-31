@@ -80,7 +80,7 @@ function Start-RemoteService
 				if ($s.Status -eq "Running") {
 					Write-Warning ("Сервис " + $s.Name + " уже запущен")
 					$result = "Running"
-				} else {							
+				} else {
 					if ($pscmdlet.ShouldProcess(($s.Name + " на компьютере $computer"))) {
 						try {
 							$s.Start()
@@ -89,6 +89,8 @@ function Start-RemoteService
 						} catch {
 							throw ("Не удалось запустить службу: " + $_)
 						}
+					} else {
+						if ($WhatIfPreference) { $result = "Running" }
 					}
 				}
 				$OutputObj = New-Object -TypeName PSobject             
@@ -219,6 +221,8 @@ function Stop-RemoteService
 						} catch {
 							throw ("Не удалось остановить службу: " + $_)
 						}
+					} else {
+						if ($WhatIfPreference) { $result = "Running" }
 					}
 				}
 				$OutputObj = New-Object -TypeName PSobject             

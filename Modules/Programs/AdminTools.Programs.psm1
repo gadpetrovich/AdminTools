@@ -399,8 +399,8 @@ function Uninstall-Program
 			
 			$app_name = $app.AppName
 			$before_uninstall_date = Get-Date
-			if ($pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and 
-				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))) {
+			if (($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", "")) -and
+				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName")) {
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
 				remove
@@ -537,6 +537,7 @@ function Install-Program()
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
 			if ($Interactive) { $_cmd += "-i " }
 			
+			$file = Get-Item $ProgSource
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
 				if (!$UseOnlyInstallParams) {
 					$params = "/quiet /norestart /qn"
@@ -588,7 +589,6 @@ function Install-Program()
 			}
 			
 			# устанавливаем
-			$file = Get-Item $ProgSource
 			$params = ""
 			
 			
@@ -597,8 +597,8 @@ function Install-Program()
 				throw "Не удалось получить список программ из $ComputerName"
 			}
 			
-			if ($pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
-				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))) {
+			if (($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", "")) -and
+				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName")) {
 				
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска установки: $before_install_date"
