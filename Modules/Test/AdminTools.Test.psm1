@@ -3,11 +3,25 @@
 # $null | Skip-Null | % { ... } 
 filter Skip-Null { $_|?{ $_ -ne $null } }
 
-function Get-NetView([string]$Match)
+
+function Get-NetView
 {
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[Alias("Name")]
+		[Alias("ComputerName")]
+		[string[]]$Matchs
+	)
     $objs = net view 
-	$o2 = $objs | select -skip 3 -first ($objs.length-5) | ? { $_ -imatch $Match } # убрали лишние строки 
-	foreach($i in $o2) {
+	
+	$o2 = $objs | select -skip 3 -first ($objs.length-5) | ? { 
+		foreach ($m in $Matchs) {
+			if ($_ -imatch $m) { return $true }
+		}
+		return $false
+	} 
+	foreach ($i in $o2) {
 		$s = $i -split "\s+", 2
 		$obj = New-Object -TypeName PSObject
 		$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")

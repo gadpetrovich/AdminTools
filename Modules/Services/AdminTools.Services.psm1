@@ -222,7 +222,7 @@ function Stop-RemoteService
 							throw ("Не удалось остановить службу: " + $_)
 						}
 					} else {
-						if ($WhatIfPreference) { $result = "Running" }
+						if ($WhatIfPreference) { $result = "Stopped" }
 					}
 				}
 				$OutputObj = New-Object -TypeName PSobject             

@@ -537,7 +537,6 @@ function Install-Program()
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
 			if ($Interactive) { $_cmd += "-i " }
 			
-			$file = Get-Item $ProgSource
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
 				if (!$UseOnlyInstallParams) {
 					$params = "/quiet /norestart /qn"
@@ -589,13 +588,11 @@ function Install-Program()
 			}
 			
 			# устанавливаем
+			$file = Get-Item $ProgSource
 			$params = ""
 			
 			
 			$before_install_state = Get-Program -ComputerName $ComputerName
-			if ($before_install_state -eq $null) {
-				throw "Не удалось получить список программ из $ComputerName"
-			}
 			
 			if (($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", "")) -and
 				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName")) {
@@ -608,8 +605,11 @@ function Install-Program()
 			}
 			Write-Verbose "Получаем список программ"
 			$after_install_state = Get-Program -ComputerName $ComputerName
-			$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
-			
+			if ($before_install_state -eq $null) {
+				$diff = @($after_install_state)
+			} else {
+				$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
+			}
 			Write-Verbose "Получаем список событий, связанных с установкой"
 			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
 			$event_message = @()
