@@ -11,23 +11,24 @@ function Get-NetView
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[Alias("Name")]
 		[Alias("ComputerName")]
-		[string[]]$Matchs
+		[string]$Match
 	)
-    $objs = net view 
-	
-	$o2 = $objs | select -skip 3 -first ($objs.length-5) | ? { 
-		foreach ($m in $Matchs) {
-			if ($_ -imatch $m) { return $true }
-		}
-		return $false
-	} 
-	foreach ($i in $o2) {
-		$s = $i -split "\s+", 2
-		$obj = New-Object -TypeName PSObject
-		$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")
-		$obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1]
-		$obj
+    begin {
+        $objs = net view 
+        $objs = $objs | select -skip 3 -first ($objs.length-5)
 	}
+    process {
+	    $o2 = $objs | ? { $_ -imatch $Match }
+	    foreach ($i in $o2) {
+		    $s = $i -split "\s+", 2
+		    $obj = New-Object -TypeName PSObject
+		    $obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")
+		    $obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1]
+		    $obj
+	    }
+    }
+    end {
+    }
 }
 
 function  Format-TableAuto { 
