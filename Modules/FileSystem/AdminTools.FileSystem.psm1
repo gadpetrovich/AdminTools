@@ -99,43 +99,6 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 	}
 }
 
-function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [switch]$ShowLevel, [switch]$ShowProgress)
-{
-	$size = 0
-	#$list = New-Object System.Collections.Generic.List[System.Object];
-	$list = @()
-	$dir = Get-ChildItem -LiteralPath $LiteralPath -Force
-	$j = 0
-	foreach ($i in $dir)
-	{	
-		if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 2)) {
-			Write-Progress -Id $Level -activity ("Вычисление размера: " + (ConvertTo-HumanReadable $size)) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
-		}
-		if ( $i.PSIsContainer ) {
-			$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
-			
-			$size += $objs[-1].Length
-			if ( $Level -lt $Depth ) { $list += $objs }
-			
-		} else {	
-			$size += $i.Length
-		}
-		$j++
-	}
-	if ($ShowProgress -and ($Level -lt 2)) {
-		Write-Progress -Id $Level -activity "Вычисление размера" -status "Сканирование"  -Complete
-	}
-	#$obj = New-Object -TypeName PSobject             
-	#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $LiteralPath
-	$obj = Get-Item -Force -LiteralPath $LiteralPath
-	$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
-	
-	if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value $Level }
-	$list += $obj
-
-	#$obj.Length.ToString() + "`t" + $obj.FullName | write-host 
-	return $list
-}
 # рекурсивное вычисление размера папки
 # $ShowProgress - отображать ход сканирования (до 2 уровней)
 # 
@@ -146,6 +109,44 @@ function Get-DiskUsageRecursive(
 	[switch]$ShowProgress
 )
 {
+
+	function recursive_disk_usage([string]$LiteralPath, [int]$Depth, [int]$Level, [switch]$ShowLevel, [switch]$ShowProgress)
+	{
+		$size = 0
+		#$list = New-Object System.Collections.Generic.List[System.Object];
+		$list = @()
+		$dir = Get-ChildItem -LiteralPath $LiteralPath -Force
+		$j = 0
+		foreach ($i in $dir)
+		{	
+			if ($ShowProgress -and ($dir.length -gt 0) -and ($Level -lt 2)) {
+				Write-Progress -Id $Level -activity ("Вычисление размера: " + (ConvertTo-HumanReadable $size)) -status ("Сканирование " + $i.FullName) -PercentComplete (($j / ($dir.length))  * 100)
+			}
+			if ( $i.PSIsContainer ) {
+				$objs = @(recursive_disk_usage -LiteralPath $i.FullName -Depth $Depth -Level ($Level+1) -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress)
+				
+				$size += $objs[-1].Length
+				if ( $Level -lt $Depth ) { $list += $objs }
+				
+			} else {	
+				$size += $i.Length
+			}
+			$j++
+		}
+		if ($ShowProgress -and ($Level -lt 2)) {
+			Write-Progress -Id $Level -activity "Вычисление размера" -status "Сканирование"  -Complete
+		}
+		#$obj = New-Object -TypeName PSobject             
+		#$obj | Add-Member -MemberType NoteProperty -Name FullName -Value $LiteralPath
+		$obj = Get-Item -Force -LiteralPath $LiteralPath
+		$obj | Add-Member -MemberType NoteProperty -Name Length -Value $size
+		
+		if($ShowLevel) { $obj | Add-Member -MemberType NoteProperty -Name Level -Value $Level }
+		$list += $obj
+
+		#$obj.Length.ToString() + "`t" + $obj.FullName | write-host 
+		return $list
+	}
 	recursive_disk_usage -LiteralPath $LiteralPath -Depth $Depth -_Level 0 -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
 }
 

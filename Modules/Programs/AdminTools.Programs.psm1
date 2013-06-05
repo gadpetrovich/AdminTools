@@ -403,7 +403,7 @@ function Uninstall-Program
 				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName")) {
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
-				remove
+				remove_app
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения удаления: $(Get-Date)"
 			} else {
