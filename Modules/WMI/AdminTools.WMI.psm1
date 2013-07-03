@@ -188,7 +188,7 @@ function Get-LogicalDiskInfo
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$DeviceID = ""
 	)  
 	begin {}
@@ -251,7 +251,7 @@ function Get-DiskPartitionInfo
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,           
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""
 	)  
 	begin {}
@@ -736,7 +736,7 @@ function Get-ProcessInfo
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""
 	)  
 	begin {}
@@ -792,7 +792,7 @@ function Get-ServiceInfo
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[string[]]$ComputerName = $env:computername,
-		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""
 	)  
 	begin {}
