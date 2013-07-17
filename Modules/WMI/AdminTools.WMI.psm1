@@ -34,6 +34,7 @@ function Get-OsInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername            
 	)  
 	begin {}
@@ -82,6 +83,7 @@ function Get-ComputerInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername            
 	)  
 	begin {}
@@ -130,6 +132,7 @@ function Get-BiosInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername            
 	)  
 	begin {}
@@ -187,6 +190,7 @@ function Get-LogicalDiskInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$DeviceID = ""
@@ -250,6 +254,7 @@ function Get-DiskPartitionInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,           
 		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""
@@ -299,6 +304,7 @@ function Get-DiskDriveInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -346,6 +352,7 @@ function Get-ProcessorInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -393,6 +400,7 @@ function Get-MotherboardInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -440,6 +448,7 @@ function Get-OnBoardDeviceInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -488,6 +497,7 @@ function Get-PhysicalMemoryInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -537,6 +547,7 @@ function Get-SoundDeviceInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -584,6 +595,7 @@ function Get-VideoControllerInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -632,6 +644,7 @@ function Get-NetworkAdapterInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -680,6 +693,7 @@ function Get-NetworkAdapterConfigurationInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 	)  
 	begin {}
@@ -735,6 +749,7 @@ function Get-ProcessInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""
@@ -791,6 +806,7 @@ function Get-ServiceInfo
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]            
 		[string]$Filter = ""

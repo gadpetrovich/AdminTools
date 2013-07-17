@@ -60,6 +60,7 @@ function Start-RemoteService
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true,Mandatory=$true,ParameterSetName="Normal")]
 		[string[]]$Name,
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Normal")]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
 		
 		[parameter(position=0,ValueFromPipeline=$true, ParameterSetName="ServiceControllers")]
@@ -192,6 +193,7 @@ function Stop-RemoteService
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true,Mandatory=$true,ParameterSetName="Normal")]
 		[string[]]$Name,
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true,ParameterSetName="Normal")]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
 		
 		[parameter(position=0,ValueFromPipeline=$true, ParameterSetName="ServiceControllers")]

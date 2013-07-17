@@ -18,6 +18,7 @@ function Add-UserToAdmin
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername
 	)
 
@@ -53,6 +54,7 @@ function Remove-UserFromAdmin
 		[parameter(ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$UserName,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername
 	)
 	
@@ -85,6 +87,7 @@ function Get-AdminUsers
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:ComputerName
 	)
 

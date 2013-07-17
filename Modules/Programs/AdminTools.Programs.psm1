@@ -1,6 +1,6 @@
 ﻿<# 
  .Synopsis
-  Возварщает список установленных программ.
+  Возвращает список установленных программ.
 
  .Description
   Функция возвращает список всех программ, установленных на указанном компьютере.
@@ -53,6 +53,7 @@ function Get-Program
 		[parameter(position=0,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[string]$AppMatch = "",
 		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername
 		
 	)            
@@ -61,7 +62,7 @@ function Get-Program
 
 	process {    
 		
-		function get_installed_date($AppDetails, $Computer) {
+		function get_installed_date($AppDetails, $Computer, $RegLastWriteTime) {
 			
 			$AppInstalledDate = $AppDetails.GetValue("InstallDate")
 			if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
@@ -72,6 +73,7 @@ function Get-Program
 				return New-Object DateTime($Year, $Month, $Day)	
 			}
 			
+			return $RegLastWriteTime
 			# $files = @()
 			
 			# $InstallLocation = $AppDetails.GetValue("InstallLocation")
@@ -111,10 +113,10 @@ function Get-Program
 			# }
 		}
 		
-		function get_application($AppRegistryKey)
+		function get_application($AppRegistry, $App)
 		{
-			$AppDetails = $HKLM.OpenSubKey($AppRegistryKey)
-			
+			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App.Key)
+			if(!$AppDetails) { return }
 			$AppDisplayName  = $AppDetails.GetValue("DisplayName")
 			if($AppDisplayName -notmatch $AppMatch ) { return }
 			if(!$AppDisplayName) { return }
@@ -125,24 +127,24 @@ function Get-Program
 			$OutputObj.AppName = $AppDisplayName
 			$OutputObj.AppVersion = $AppDetails.GetValue("DisplayVersion")
 			$OutputObj.AppVendor = $AppDetails.GetValue("Publisher")
-			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer
+			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer $App.LastWriteTime
 			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
 			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
 			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
-			$OutputObj.AppGUID = $App
+			$OutputObj.AppGUID = $App.Key
 			$OutputObj
 			
 			$AppDetails.Close()
 		}
 		
-		function get_applications($UninstallRegKey) {
+		function get_applications($computer, $UninstallRegKey) {
 			#http://support.microsoft.com/kb/892192/ru
 			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)     
 			if ($UninstallRef -eq $null) { return }
-			$Applications = $UninstallRef.GetSubKeyNames()
-
+			#$Applications = $UninstallRef.GetSubKeyNames()
+			$Applications = Get-RegKeyLastWriteTime -ComputerName $computer -Key HKLM -SubKey $UninstallRegKey
 			foreach ($App in $Applications) {
-				get_application "$UninstallRegKey\\$App"
+				get_application $UninstallRegKey $App
 			}
 			$UninstallRef.Close()
 		}
@@ -161,7 +163,7 @@ function Get-Program
 				$keys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 				#$keys += "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Products"
 				foreach ($key in $keys) {
-					get_applications $key
+					get_applications $computer $key
 				}
 				$HKLM.Close()
 			}            
@@ -177,6 +179,7 @@ function Wait-InstallProgram
 {
 	param(
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername, 
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
 		[int]$WaitSecPeriod = 7,
@@ -211,6 +214,7 @@ function Wait-WMIRestartComputer
 {
 	param(
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName,
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
 		[int]$WaitSecPeriod = 10, 
@@ -332,6 +336,7 @@ function Uninstall-Program
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$AppGUID,
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[switch]$EmptyDefaultParams,
@@ -521,6 +526,7 @@ function Install-Program()
 		[string]$ProgSource, 
 		
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername, 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
