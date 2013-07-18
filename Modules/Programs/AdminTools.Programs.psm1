@@ -62,7 +62,7 @@ function Get-Program
 
 	process {    
 		
-		function get_installed_date($AppDetails, $Computer, $RegLastWriteTime) {
+		function get_installed_date($AppDetails, $Computer) {
 			
 			$AppInstalledDate = $AppDetails.GetValue("InstallDate")
 			if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
@@ -73,50 +73,15 @@ function Get-Program
 				return New-Object DateTime($Year, $Month, $Day)	
 			}
 			
-			return $RegLastWriteTime
-			# $files = @()
+			$regdata = Get-RegKeyLastWriteTime -ComputerName $computer -Key HKLM `
+				-SubKey $AppDetails.name.Substring($AppDetails.Name.IndexOf("\")+1)
 			
-			# $InstallLocation = $AppDetails.GetValue("InstallLocation")
-			# if (![String]::IsNullOrEmpty($InstallLocation)) {
-				# $files += $InstallLocation
-			# }
-			
-			# $DisplayIcon = $AppDetails.GetValue("DisplayIcon")
-			# if (![String]::IsNullOrEmpty($DisplayIcon)) {
-				# $files += $DisplayIcon.Split(',')[0].Trim(' "')
-			# }
-			
-			# $UninstallString = $AppDetails.GetValue("UninstallString")
-			# $Default = $AppDetails.GetValue("")
-			# if (![String]::IsNullOrEmpty($UninstallString) -and [String]::IsNullOrEmpty($Default)) {
-				# if ($UninstallString.IndexOf('"') -gt -1) {
-					# $UninstallString = $UninstallString.Split('"')[1]
-				# }
-				# if ($UninstallString.Split().Count -gt 1) {
-					# $UninstallString = ([regex]::Match($UninstallString, ".*\.\w*")).Value
-				# }
-				# $files += $UninstallString
-			# }
-			
-			# foreach ($file_name in $files) {
-				# $disk = $file_name[0]
-				# $remote_tester = $file_name.Replace("$Disk`:", "\\$Computer\$Disk`$")
-				
-				# if ((Test-Path $remote_tester)) {
-					# $item = Get-Item $remote_tester
-					# if ($item.CreationTime -gt $item.LastWriteTime) {
-						# return $item.CreationTime
-					# } else {
-						# return $item.LastWriteTime
-					# }
-				# }
-			# }
+			return $regdata.LastWriteTime
 		}
 		
-		function get_application($AppRegistry, $App)
+		function get_application($Computer, $AppRegistry, $App)
 		{
-			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App.Key)
-			if(!$AppDetails) { return }
+			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
 			$AppDisplayName  = $AppDetails.GetValue("DisplayName")
 			if($AppDisplayName -notmatch $AppMatch ) { return }
 			if(!$AppDisplayName) { return }
@@ -127,26 +92,24 @@ function Get-Program
 			$OutputObj.AppName = $AppDisplayName
 			$OutputObj.AppVersion = $AppDetails.GetValue("DisplayVersion")
 			$OutputObj.AppVendor = $AppDetails.GetValue("Publisher")
-			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer $App.LastWriteTime
+			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer 
 			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
 			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
 			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
-			$OutputObj.AppGUID = $App.Key
+			$OutputObj.AppGUID = $App
 			$OutputObj
 			
 			$AppDetails.Close()
 		}
 		
-		function get_applications($computer, $UninstallRegKey) {
-			#http://support.microsoft.com/kb/892192/ru
+		function get_applications($Computer, $UninstallRegKey) {
 			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)     
 			if ($UninstallRef -eq $null) { return }
-			#$Applications = $UninstallRef.GetSubKeyNames()
-			$Applications = Get-RegKeyLastWriteTime -ComputerName $computer -Key HKLM -SubKey $UninstallRegKey
-			foreach ($App in $Applications) {
-				get_application $UninstallRegKey $App
-			}
+			$Applications = $UninstallRef.GetSubKeyNames()
 			$UninstallRef.Close()
+			foreach ($App in $Applications) {
+				get_application $Computer $UninstallRegKey $App
+			}
 		}
 		
 		try

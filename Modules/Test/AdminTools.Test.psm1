@@ -277,19 +277,23 @@ $sig1 = @'
 		    -Namespace RegOpenKeyEx -Using System.Text -PassThru
 
 $sig2 = @'
-[DllImport("advapi32.dll", EntryPoint = "RegEnumKeyEx")]
-extern public static int RegEnumKeyEx(
-    int hkey,
-    int index,
-    StringBuilder lpName,
-    ref int lpcbName,
-    int reserved,
-    int lpClass,
-    int lpcbClass,
-    out long lpftLastWriteTime);
+[DllImport("advapi32.dll")]
+public static extern int RegQueryInfoKey(
+	int hkey,
+	StringBuilder lpClass,
+	ref int lpcbClass,
+	int lpReserved,
+	out int lpcSubKeys,
+	out int lpcbMaxSubKeyLen,
+	out int lpcbMaxClassLen,
+	out int lpcValues,
+	out int lpcbMaxValueNameLen,
+	out int lpcbMaxValueLen,
+	out int lpcbSecurityDescriptor,
+	out long lpftLastWriteTime);
 '@
 		$type2 = Add-Type -MemberDefinition $sig2 -Name Win32Utils `
-		    -Namespace RegEnumKeyEx -Using System.Text -PassThru
+		    -Namespace RegQueryInfoKey -Using System.Text -PassThru
 
 $sig3 = @'
 [DllImport("advapi32.dll", SetLastError=true)]
@@ -308,27 +312,17 @@ public static extern int RegCloseKey(
 		[ref]$hKeyref)
 
 		#initialize variables
-		$builder = New-Object System.Text.StringBuilder 1024
-		$index = 0
-		$length = [int] 1024
 		$time = New-Object Long
 
-		#234 means more info, 0 means success. Either way, keep reading
-		while ( 0,234 -contains $type2::RegEnumKeyEx($hKeyref, $index++, `
-		    $builder, [ref] $length, $null, $null, $null, [ref] $time) )
-		{
-		    #create output object
-		    $o = "" | Select Key, LastWriteTime, ComputerName
-			$o.ComputerName = "$computer" 
-		    $o.Key = $builder.ToString()
-			# TODO Change to use the time api
-		    $o.LastWriteTime = (Get-Date $time).AddYears(1600).AddHours(-4)
-		    $o
-
-		    #reinitialize for next time through the loop  
-		    $length = [int] 1024
-		    $builder = New-Object System.Text.StringBuilder 1024
-		}
+		$result = $type2::RegQueryInfoKey($hKeyref, $null, [ref]$null, 0, [ref]$null, [ref]$null, `
+		    [ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$time)
+		#create output object
+		$o = "" | Select Key, LastWriteTime, ComputerName
+		$o.ComputerName = "$computer" 
+		$o.Key = "$Key\$SubKey"
+		# TODO Change to use the time api
+		$o.LastWriteTime = (Get-Date $time).AddYears(1600).AddHours(-4)
+		$o
 
 		$result = $type3::RegCloseKey($hKey);
 		}
