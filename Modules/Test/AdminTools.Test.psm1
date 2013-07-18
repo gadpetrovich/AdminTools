@@ -347,7 +347,7 @@ public static extern int RegCloseKey(
   Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.
   
  .Parameter LeftProperty
-  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то LeftObject будет добавлен, как значение (под именем "Value").
+  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. В случае, когда элементы списка не наследуются от класса PSObject, параметр LeftProperty не используется, и имя свойства результирующего списка выбирается, как "Value".
 
   Значение параметра LeftProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -356,7 +356,7 @@ public static extern int RegCloseKey(
   К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
  
  .Parameter RightProperty
-  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то RightObject будет добавлен, как значение (под именем "Value").
+  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены. В случае, когда элементы списка не наследуются от класса PSObject, параметр RightProperty не используется, и имя свойства результирующего списка выбирается, как "JoinValue".
 
   Значение параметра RightProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -438,15 +438,15 @@ function Join-Object
 		$LeftObject, 
 		$RightObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
-		[Object[]]$LeftProperty = $null,
-		[Object[]]$RightProperty = $null,
+		[Object[]]$LeftProperty = "*",
+		[Object[]]$RightProperty = "*",
 		[Hashtable[]]$CustomProperty = $null
 	)
 	
 	begin{}
 	process {
 		
-		function getFreeJoinParameter($Obj, $PropName) 
+		function get_free_join_parameter($Obj, $PropName) 
 		{
 			$name = $PropName
 			if ($Obj | Get-Member -Name $name) {
@@ -459,7 +459,7 @@ function Join-Object
 			return $name
 		}
 
-		function fillTempObject($properties, $left, $right)
+		function fill_temp_object($properties, $left, $right)
 		{
 			$prop_list = New-Object -Type PSObject
 			# заполняем промежуточный объект $prop_list
@@ -494,16 +494,16 @@ function Join-Object
 			}
 			return $prop_list
 		}
-		function addProperty($out, $prop_list)
+		function add_property($out, $prop_list)
 		{			
 			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
-				$ip_name = getFreeJoinParameter $out $ip.Name
+				$ip_name = get_free_join_parameter $out $ip.Name
 				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
 			}
 		}
-		function addValue($out, $source)
+		function add_value($out, $source)
 		{
-			$ip_name = getFreeJoinParameter $out "Value"
+			$ip_name = get_free_join_parameter $out "Value"
 			$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $source
 		}
 		
@@ -512,20 +512,20 @@ function Join-Object
 				if ( !($FilterScript.Invoke($i, $j))) {continue}
 				$out = New-Object -TypeName PSobject    
 				
-				if($LeftProperty) {
-					addProperty $out ($i | select $LeftProperty)
+				if($i -is "PSObject") {
+					add_property $out ($i | select $LeftProperty)
 				} else {
-					addValue $out $i
+					add_value $out $i
 				}
 				
-				if($RightProperty) {
-					addProperty $out ($j | select $RightProperty)
+				if($j -is "PSObject") {
+					add_property $out ($j | select $RightProperty)
 				} else {
-					addValue $out $j
+					add_value $out $j
 				}
 				
 				if($CustomProperty) {
-					addProperty $out (fillTempObject $CustomProperty $i $j)
+					add_property $out (fill_temp_object $CustomProperty $i $j)
 				}
 				$out
 			}
