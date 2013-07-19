@@ -335,7 +335,6 @@ public static extern int RegCloseKey(
 
  .Description
   Результат выполнения Join-Object есть декартово произведение двух списков, представленных параметрами LeftObject и RightObject. Если какие-либо имена свойств у LeftObject и RightObject совпадают, то к имени свойства из списка RightObject добавляется строка "Join". Например при объединении списков, содеражих одинаковые свойства (Id, Name), получаем результирующий список со свойствами: Id, Name, JoinId, JoinName.
-  В случае, когда элементы списков не наследуются от класса PSObject, параметры LeftProperty и RightProperty не используются, и имена свойств результирующего списка выбираются, как "Value" и "JoinValue".
     
  .Parameter LeftObject
   Первый список для объединения. Может использоваться для перадачи объектов по конвейеру.
@@ -347,7 +346,7 @@ public static extern int RegCloseKey(
   Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.
   
  .Parameter LeftProperty
-  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. В случае, когда элементы списка не наследуются от класса PSObject, параметр LeftProperty не используется, и имя свойства результирующего списка выбирается, как "Value".
+  Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то LeftObject будет добавлен, как значение (под именем "Value").
 
   Значение параметра LeftProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -356,7 +355,7 @@ public static extern int RegCloseKey(
   К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
  
  .Parameter RightProperty
-  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены. В случае, когда элементы списка не наследуются от класса PSObject, параметр RightProperty не используется, и имя свойства результирующего списка выбирается, как "JoinValue".
+  Указывает список свойств из RightObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то RightObject будет добавлен, как значение (под именем "Value").
 
   Значение параметра RightProperty может быть новым вычисляемым свойством. Чтобы создать вычисляемое свойство, используйте хэш-таблицу. Допустимые ключи:
   -- Name (или Label) <строка>
@@ -371,9 +370,17 @@ public static extern int RegCloseKey(
   -- Name (или Label) <строка>
   -- Expression <блок скрипта>
   
-  Для передачи параметров в блок скрипта используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.  
+  Для передачи параметров в блок скрипта используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject. Также можно использовать массив $Args. Переменная $Args[0] содержит объект из LeftObject, $Args[1] - из RightObject. 
   
   К именам свойств, совпадающим с уже существующими полями, будет добавляться префикс "Join".
+  
+ .Parameter Type
+  Тип объединения списков.
+  
+  AllInLeft берет все записи из LeftObject и только те записи из RightObject, которые удовлетворяют условию FilterScript.
+  AllInRight берет все записи из RightObject и только те записи из LeftObject, которые удовлетворяют условию FilterScript.
+  OnlyIfInBoth берет только те записи, которые удовлетворяют условию FilterScript.
+  AllInBoth берет все записи.
   
  .Example
    PS C:\> $a = get-childitem c:\dir1
@@ -410,6 +417,15 @@ public static extern int RegCloseKey(
    Описание
    -----------
    Эта команда возвращает список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2. Используется передача параметра LeftObject через конвейер.
+ 
+ .Example
+   PS C:\> $a = get-childitem c:\dir1
+   PS C:\> $b = get-childitem c:\dir2
+   PS C:\> Join-Object -LeftObject $a -RightObject $b -where { param($i,$j); $i.name -eq $j.name } -LeftProperty name, LastWriteTime -RightProperty LastWriteTime -Type AllInLeft
+
+   Описание
+   -----------
+   На экран будут выведен список файлов и директорий с совпадающими именами в c:\dir1 и c:\dir2, а также все остальные файлы и папки в директории c:\dir1.
    
  .Example
    PS C:\> Join-Object (1..9) (1..9) { param($i, $j); $i+$j -eq 10 } 
@@ -419,8 +435,8 @@ public static extern int RegCloseKey(
    На экран будут выведены суммы чисел, равных 10-и.
  
  .Example
-   PS C:\> $comp1 = Get-Program comp1
-   PS C:\> $comp2 = Get-Program comp2
+   PS C:\> $comp1 = Get-Program -ComputerName comp1
+   PS C:\> $comp2 = Get-Program -ComputerName comp2
    PS C:\> Join-Object $comp1 $comp2 { param($i, $j); $i.AppName -eq $j.AppName } AppName, InstalledDate InstalledDate
  
    Описание
@@ -435,30 +451,25 @@ function Join-Object
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		$LeftObject, 
-		$RightObject,
+        [ValidateNotNull()][Alias("Left")][Object[]]$LeftObject, 
+		[ValidateNotNull()][Alias("Right")][Object[]]$RightObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
-		[Object[]]$LeftProperty = "*",
-		[Object[]]$RightProperty = "*",
-		[Hashtable[]]$CustomProperty = $null
+		[Alias("LeftProperties")][Object[]]$LeftProperty = $null,
+		[Alias("RightProperties")][Object[]]$RightProperty = $null,
+		[Hashtable[]]$CustomProperty = $null,
+		[ValidateSet("AllInLeft","OnlyIfInBoth","AllInBoth", "AllInRight")]
+		[String]$Type="OnlyIfInBoth"
 	)
 	
-	begin{}
+	begin{
+        $left_properties = @{}
+        $right_properties = @{}
+        $custom_properties = @{}
+		$right_matches_count = new-object "int[]" $RightObject.Count
+        $is_begin = $true
+	}
 	process {
 		
-		function get_free_join_parameter($Obj, $PropName) 
-		{
-			$name = $PropName
-			if ($Obj | Get-Member -Name $name) {
-				$name = "Join$PropName"
-			}
-			
-			for ($i = 2; $Obj | Get-Member -Name $name; $i++) {
-				$name = "Join$PropName$i"
-			}
-			return $name
-		}
-
 		function fill_temp_object($properties, $left, $right)
 		{
 			$prop_list = New-Object -Type PSObject
@@ -494,42 +505,129 @@ function Join-Object
 			}
 			return $prop_list
 		}
-		function add_property($out, $prop_list)
+		
+		function add($out, $source, $properties, $prop_hash)
 		{			
-			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
-				$ip_name = get_free_join_parameter $out $ip.Name
-				$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $prop_list.($ip.Name)
-			}
+			if($properties -or $source -eq $null) {
+				add_properties $out ($source | select $properties) $prop_hash
+			} else {
+				add_value $out $source $prop_hash
+			}		
 		}
-		function add_value($out, $source)
+		function add_properties($out, $prop_list, $prop_hash)
 		{
-			$ip_name = get_free_join_parameter $out "Value"
-			$out | Add-Member -MemberType NoteProperty -Name $ip_name -Value $source
+    		foreach($key in $prop_hash.Keys) {                
+                if ($prop_list) {
+                    $out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $prop_list.($key)
+                } else {
+                    $out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $null
+                }
+    		}
+		}
+		function add_value($out, $source, $prop_hash)
+		{
+			$out | Add-Member -MemberType NoteProperty -Name $prop_hash["Value"] -Value $source
 		}
 		
-		foreach($i in $LeftObject) {
-			foreach($j in $RightObject) {
-				if ( !($FilterScript.Invoke($i, $j))) {continue}
+        function get_new_name($name, $hash_list) 
+        {
+:name_index for ($i = 0; $true; $i++) {
+                switch ($i) {
+                    0 { $new_name = $Name }
+                    1 { $new_name = "Join$Name" }
+                    2 { $new_name = "Join$Name$i" }
+                }
+                foreach ($hash in $hash_list) {
+                    if ($hash.ContainsValue($new_name)) { continue name_index}
+                }
+                return $new_name
+            }
+        }
+        
+        function init_hashtables() {
+            if ($LeftProperty) {
+                foreach($ip in ($LeftObject[0] | select $LeftProperty) | Get-Member -MemberType *Property) {
+                    $left_properties[$ip.Name] = $ip.Name
+                }
+            } else {
+                $left_properties["Value"] = "Value"
+            }
+            if ($RightProperty) {
+                foreach($ip in ($RightObject[0] | select $RightProperty) | Get-Member -MemberType *Property) {
+                    $right_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties)
+                }
+            } else {
+                $right_properties["Value"] = get_new_name "Value" @($left_properties)
+            }
+            if ($CustomProperty) {
+                foreach($ip in (fill_temp_object $CustomProperty $LeftObject[0] $RightObject[0]) | Get-Member -MemberType *Property) {
+                    $custom_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties, $custom_properties)
+                }
+            }
+        }
+        
+        if ($is_begin) {
+            init_hashtables 
+            $is_begin = $false
+        }
+        
+		if ($Type -eq "AllInRight") {
+			$swap = $LeftObject
+			$LeftObject = $RightObject
+			$RightObject = $swap
+		}
+		
+		for($i = 0; $i -lt $LeftObject.Count; $i++) {
+			$left_matches_count = 0
+			for($j = 0; $j -lt $RightObject.Count; $j++) {
+                $left_item = $LeftObject[$i]
+                $right_item = $RightObject[$j]
+                if ($Type -eq "AllInRight") {
+                    $swap = $left_item
+                    $left_item = $right_item
+                    $right_item = $swap
+                }
+				if ( !($FilterScript.Invoke($left_item, $right_item))) {continue}
+                
+				$left_matches_count++
+				$right_matches_count[$j]++
+				
 				$out = New-Object -TypeName PSobject    
 				
-				if($i -is "PSObject") {
-					add_property $out ($i | select $LeftProperty)
-				} else {
-					add_value $out $i
-				}
-				
-				if($j -is "PSObject") {
-					add_property $out ($j | select $RightProperty)
-				} else {
-					add_value $out $j
-				}
-				
+				add $out $left_item $LeftProperty $left_properties
+				add $out $right_item $RightProperty $right_properties
 				if($CustomProperty) {
-					add_property $out (fill_temp_object $CustomProperty $i $j)
+					add_properties $out (fill_temp_object $CustomProperty $left_item $right_item) $custom_properties
 				}
 				$out
 			}
+			if ($Type -ne "OnlyIfInBoth" -and $left_matches_count -eq 0) {
+                $out = New-Object -TypeName PSobject    
+                if ($Type -eq "AllInLeft" -or $Type -eq "AllInBoth") {
+				    add $out $LeftObject[$i] $LeftProperty $left_properties
+                    add $out $null $null $right_properties
+                    add $out $null $null $custom_properties
+                } else {
+                    add $out $null $null $left_properties
+                    add $out $LeftObject[$i] $RightProperty $right_properties
+                    add $out $null $null $custom_properties
+                }
+                $out
+			}
+		}
+		
+	}
+	end {
+		if ($Type -eq "AllInBoth") {
+			for ($i = 0; $i -lt $RightObject.Count; $i++) {
+				if ($right_matches_count[$i] -eq 0) {
+                    $out = New-Object -TypeName PSobject    
+                    add $out $null $null $left_properties
+					add $out $RightObject[$i] $RightProperty $right_properties
+                    add $out $null $null $custom_properties
+                    $out
+				}
+			}
 		}
 	}
-	end{}
 }
