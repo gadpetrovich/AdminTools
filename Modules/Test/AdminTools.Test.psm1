@@ -465,6 +465,8 @@ function Join-Object
         $left_properties = @{}
         $right_properties = @{}
         $custom_properties = @{}
+		$left_rows = @()
+		$left_matches_count = new-object "int[]" 0
 		$right_matches_count = new-object "int[]" $RightObject.Count
         $is_begin = $true
 	}
@@ -538,7 +540,7 @@ function Join-Object
                     2 { $new_name = "Join$Name$i" }
                 }
                 foreach ($hash in $hash_list) {
-                    if ($hash.ContainsValue($new_name)) { continue name_index}
+                    if ($hash.ContainsValue($new_name)) { continue name_index }
                 }
                 return $new_name
             }
@@ -571,29 +573,19 @@ function Join-Object
             $is_begin = $false
         }
         
-		if ($Type -eq "AllInRight") {
-			$swap = $LeftObject
-			$LeftObject = $RightObject
-			$RightObject = $swap
-		}
-
 		for($i = 0; $i -lt $LeftObject.Count; $i++) {
-			$left_matches_count = 0
+			$left_rows += $LeftObject[$i]
+			$left_matches_count += 0
 			for($j = 0; $j -lt $RightObject.Count; $j++) {
-                $left_item = $LeftObject[$i]
-                $right_item = $RightObject[$j]
-                if ($Type -eq "AllInRight") {
-                    $swap = $left_item
-                    $left_item = $right_item
-                    $right_item = $swap
-                }
+				$left_item = $LeftObject[$i]
+				$right_item = $RightObject[$j]
+				
 				if ( !($FilterScript.Invoke($left_item, $right_item))) {continue}
                 
-				$left_matches_count++
+				$left_matches_count[$left_matches_count.Count-1]++
 				$right_matches_count[$j]++
 				
-				$out = New-Object -TypeName PSobject    
-				
+				$out = New-Object -TypeName PSobject
                 add $out $left_item $($LeftProperty) $left_properties
 				add $out $right_item $($RightProperty) $right_properties
 				if($CustomProperty) {
@@ -601,24 +593,21 @@ function Join-Object
 				}
 				$out
 			}
-			if ($Type -ne "OnlyIfInBoth" -and $left_matches_count -eq 0) {
-                $out = New-Object -TypeName PSobject    
-                if ($Type -eq "AllInLeft" -or $Type -eq "AllInBoth") {
-				    add $out $LeftObject[$i] $($LeftProperty) $left_properties
-                    add $out $null $null $right_properties
-                    add $out $null $null $custom_properties
-                } else {
-                    add $out $null $null $left_properties
-                    add $out $LeftObject[$i] $($RightProperty) $right_properties
-                    add $out $null $null $custom_properties
-                }
-                $out
-			}
 		}
-		
 	}
 	end {
-		if ($Type -eq "AllInBoth") {
+		if ($Type -eq "AllInBoth" -or $Type -eq "AllInLeft") {
+			for ($i = 0; $i -lt $left_rows.Count; $i++) {
+				if ($left_matches_count[$i] -eq 0) {
+					$out = New-Object -TypeName PSobject
+					add $out $left_rows[$i] $($LeftProperty) $left_properties
+					add $out $null $null $right_properties
+					add $out $null $null $custom_properties
+					$out
+				}
+			}
+		}
+		if ($Type -eq "AllInBoth" -or $Type -eq "AllInRight") {
 			for ($i = 0; $i -lt $RightObject.Count; $i++) {
 				if ($right_matches_count[$i] -eq 0) {
                     $out = New-Object -TypeName PSobject    
