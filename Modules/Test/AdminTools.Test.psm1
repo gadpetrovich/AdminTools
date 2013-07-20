@@ -576,7 +576,7 @@ function Join-Object
 			$LeftObject = $RightObject
 			$RightObject = $swap
 		}
-		
+
 		for($i = 0; $i -lt $LeftObject.Count; $i++) {
 			$left_matches_count = 0
 			for($j = 0; $j -lt $RightObject.Count; $j++) {
@@ -594,8 +594,8 @@ function Join-Object
 				
 				$out = New-Object -TypeName PSobject    
 				
-				add $out $left_item $LeftProperty $left_properties
-				add $out $right_item $RightProperty $right_properties
+                add $out $left_item $($LeftProperty) $left_properties
+				add $out $right_item $($RightProperty) $right_properties
 				if($CustomProperty) {
 					add_properties $out (fill_temp_object $CustomProperty $left_item $right_item) $custom_properties
 				}
@@ -604,12 +604,12 @@ function Join-Object
 			if ($Type -ne "OnlyIfInBoth" -and $left_matches_count -eq 0) {
                 $out = New-Object -TypeName PSobject    
                 if ($Type -eq "AllInLeft" -or $Type -eq "AllInBoth") {
-				    add $out $LeftObject[$i] $LeftProperty $left_properties
+				    add $out $LeftObject[$i] $($LeftProperty) $left_properties
                     add $out $null $null $right_properties
                     add $out $null $null $custom_properties
                 } else {
                     add $out $null $null $left_properties
-                    add $out $LeftObject[$i] $RightProperty $right_properties
+                    add $out $LeftObject[$i] $($RightProperty) $right_properties
                     add $out $null $null $custom_properties
                 }
                 $out
@@ -623,7 +623,7 @@ function Join-Object
 				if ($right_matches_count[$i] -eq 0) {
                     $out = New-Object -TypeName PSobject    
                     add $out $null $null $left_properties
-					add $out $RightObject[$i] $RightProperty $right_properties
+					add $out $RightObject[$i] $($RightProperty) $right_properties
                     add $out $null $null $custom_properties
                     $out
 				}
