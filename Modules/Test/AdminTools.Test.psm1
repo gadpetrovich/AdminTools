@@ -61,46 +61,46 @@ Generates a function for FlashWindow which ignores the boolean return value, and
     .Parameter OutputText
         If Set, retuns the source code for the pinvoke method.
         If not, compiles the type. 
-	.Link
-		http://poshcode.org/1409
-    #>
-    param(
-    [Parameter(Mandatory=$true, 
-        HelpMessage="The C Library Containing the Function, i.e. User32")]
-    [String]
-    $Library,
-    
-    [Parameter(Mandatory=$true,
-        HelpMessage="The Signature of the Method, i.e.: int GetSystemMetrics(uint Metric)")]
-    [String]
-    $Signature,
-    
-    [Switch]
-    $OutputText
-    )
-    
-    process {
-        if ($Library -notlike "*.dll*") {
-            $Library+=".dll"
-        }
-        if ($signature -notlike "*;") {
-            $Signature+=";"
-        }
-        if ($signature -notlike "public static extern*") {
-            $signature = "public static extern $signature"
-        }
-        
-        $name = $($signature -replace "^.*?\s(\w+)\(.*$",'$1')
-        
-        $MemberDefinition = "[DllImport(`"$Library`")]`n$Signature"
-        
-        if (-not $OutputText) {
-            $type = Add-Type -PassThru -Name "PInvoke$(Get-Random)" -MemberDefinition $MemberDefinition
-            iex "New-Item Function:Global:$name -Value { [$($type.FullName)]::$name.Invoke( `$args ) }"
-        } else {
-            $MemberDefinition
-        }
-    }
+    .Link
+        http://poshcode.org/1409
+	#>
+	param(
+	[Parameter(Mandatory=$true, 
+		HelpMessage="The C Library Containing the Function, i.e. User32")]
+	[String]
+	$Library,
+
+	[Parameter(Mandatory=$true,
+		HelpMessage="The Signature of the Method, i.e.: int GetSystemMetrics(uint Metric)")]
+	[String]
+	$Signature,
+
+	[Switch]
+	$OutputText
+	)
+
+	process {
+		if ($Library -notlike "*.dll*") {
+			$Library+=".dll"
+		}
+		if ($signature -notlike "*;") {
+			$Signature+=";"
+		}
+		if ($signature -notlike "public static extern*") {
+			$signature = "public static extern $signature"
+		}
+		
+		$name = $($signature -replace "^.*?\s(\w+)\(.*$",'$1')
+		
+		$MemberDefinition = "[DllImport(`"$Library`")]`n$Signature"
+		
+		if (-not $OutputText) {
+			$type = Add-Type -PassThru -Name "PInvoke$(Get-Random)" -MemberDefinition $MemberDefinition
+			iex "New-Item Function:Global:$name -Value { [$($type.FullName)]::$name.Invoke( `$args ) }"
+		} else {
+			$MemberDefinition
+		}
+	}
 }
 
 
@@ -113,15 +113,15 @@ function Assert-PSWindow ()
 
 #http://xaegr.wordpress.com/2007/01/24/decoder/
 function ConvertTo-Encoding ([string]$From, [string]$To){  
-    Begin{  
-        $encFrom = [System.Text.Encoding]::GetEncoding($from)  
-        $encTo = [System.Text.Encoding]::GetEncoding($to)  
-    }  
-    Process{  
-        $bytes = $encTo.GetBytes($_)  
-        $bytes = [System.Text.Encoding]::Convert($encFrom, $encTo, $bytes)  
-        $encTo.GetString($bytes)  
-    }  
+	Begin{  
+		$encFrom = [System.Text.Encoding]::GetEncoding($from)  
+		$encTo = [System.Text.Encoding]::GetEncoding($to)  
+	}  
+	Process{  
+		$bytes = $encTo.GetBytes($_)  
+		$bytes = [System.Text.Encoding]::Convert($encFrom, $encTo, $bytes)  
+		$encTo.GetString($bytes)  
+	}  
 }  
 
 function Get-Property ()
@@ -256,8 +256,8 @@ function Get-RegKeyLastWriteTime {
 		
 $sig0 = @'
 [DllImport("advapi32.dll", SetLastError = true)]
-  public static extern int RegConnectRegistry(
-  	string lpMachineName,
+public static extern int RegConnectRegistry(
+	string lpMachineName,
 	int hkey,
 	ref int phkResult);
 '@
@@ -266,15 +266,15 @@ $sig0 = @'
 
 $sig1 = @'
 [DllImport("advapi32.dll", CharSet = CharSet.Auto)]
-  public static extern int RegOpenKeyEx(
-    int hKey,
-    string subKey,
-    int ulOptions,
-    int samDesired,
-    out int hkResult);
+public static extern int RegOpenKeyEx(
+	int hKey,
+	string subKey,
+	int ulOptions,
+	int samDesired,
+	out int hkResult);
 '@
 		$type1 = Add-Type -MemberDefinition $sig1 -Name Win32Utils `
-		    -Namespace RegOpenKeyEx -Using System.Text -PassThru
+			-Namespace RegOpenKeyEx -Using System.Text -PassThru
 
 $sig2 = @'
 [DllImport("advapi32.dll")]
@@ -293,15 +293,15 @@ public static extern int RegQueryInfoKey(
 	out long lpftLastWriteTime);
 '@
 		$type2 = Add-Type -MemberDefinition $sig2 -Name Win32Utils `
-		    -Namespace RegQueryInfoKey -Using System.Text -PassThru
+			-Namespace RegQueryInfoKey -Using System.Text -PassThru
 
 $sig3 = @'
 [DllImport("advapi32.dll", SetLastError=true)]
 public static extern int RegCloseKey(
-    int hKey);
+	int hKey);
 '@
 		$type3 = Add-Type -MemberDefinition $sig3 -Name Win32Utils `
-		    -Namespace RegCloseKey -Using System.Text -PassThru
+			-Namespace RegCloseKey -Using System.Text -PassThru
 
 
 		$hKey = new-object int
@@ -451,7 +451,7 @@ function Join-Object
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-        [ValidateNotNull()][Alias("Left")][Object[]]$LeftObject, 
+		[ValidateNotNull()][Alias("Left")][Object[]]$LeftObject, 
 		[ValidateNotNull()][Alias("Right")][Object[]]$RightObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
 		[Alias("LeftProperties")][Object[]]$LeftProperty = $null,
@@ -462,13 +462,13 @@ function Join-Object
 	)
 	
 	begin{
-        $left_properties = @{}
-        $right_properties = @{}
-        $custom_properties = @{}
+		$left_properties = @{}
+		$right_properties = @{}
+		$custom_properties = @{}
 		$left_rows = @()
 		$left_matches_count = new-object "int[]" 0
 		$right_matches_count = new-object "int[]" $RightObject.Count
-        $is_begin = $true
+		$is_begin = $true
 	}
 	process {
 		
@@ -518,12 +518,12 @@ function Join-Object
 		}
 		function add_properties($out, $prop_list, $prop_hash)
 		{
-    		foreach($key in $prop_hash.Keys) {                
-                if ($prop_list) {
-                    $out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $prop_list.($key)
-                } else {
-                    $out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $null
-                }
+			foreach($key in $prop_hash.Keys) {                
+				if ($prop_list) {
+					$out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $prop_list.($key)
+				} else {
+					$out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $null
+				}
     		}
 		}
 		function add_value($out, $source, $prop_hash)
@@ -531,47 +531,48 @@ function Join-Object
 			$out | Add-Member -MemberType NoteProperty -Name $prop_hash["Value"] -Value $source
 		}
 		
-        function get_new_name($name, $hash_list) 
-        {
-:name_index for ($i = 0; $true; $i++) {
-                switch ($i) {
-                    0 { $new_name = $Name }
-                    1 { $new_name = "Join$Name" }
-                    2 { $new_name = "Join$Name$i" }
-                }
-                foreach ($hash in $hash_list) {
-                    if ($hash.ContainsValue($new_name)) { continue name_index }
-                }
-                return $new_name
-            }
-        }
-        
-        function init_hashtables() {
-            if ($LeftProperty) {
-                foreach($ip in ($LeftObject[0] | select $LeftProperty) | Get-Member -MemberType *Property) {
-                    $left_properties[$ip.Name] = $ip.Name
-                }
-            } else {
-                $left_properties["Value"] = "Value"
-            }
-            if ($RightProperty) {
-                foreach($ip in ($RightObject[0] | select $RightProperty) | Get-Member -MemberType *Property) {
-                    $right_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties)
-                }
-            } else {
-                $right_properties["Value"] = get_new_name "Value" @($left_properties)
-            }
-            if ($CustomProperty) {
-                foreach($ip in (fill_temp_object $CustomProperty $LeftObject[0] $RightObject[0]) | Get-Member -MemberType *Property) {
-                    $custom_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties, $custom_properties)
-                }
-            }
-        }
-        
-        if ($is_begin) {
-            init_hashtables 
-            $is_begin = $false
-        }
+		function get_new_name($name, $hash_list) 
+		{
+:name_index	
+			for ($i = 0; $true; $i++) {
+				switch ($i) {
+					0 { $new_name = $Name }
+					1 { $new_name = "Join$Name" }
+					2 { $new_name = "Join$Name$i" }
+				}
+				foreach ($hash in $hash_list) {
+					if ($hash.ContainsValue($new_name)) { continue name_index }
+				}
+				return $new_name
+			}
+		}
+
+		function init_hashtables() {
+			if ($LeftProperty) {
+				foreach($ip in ($LeftObject[0] | select $LeftProperty) | Get-Member -MemberType *Property) {
+					$left_properties[$ip.Name] = $ip.Name
+				}
+			} else {
+				$left_properties["Value"] = "Value"
+			}
+			if ($RightProperty) {
+				foreach($ip in ($RightObject[0] | select $RightProperty) | Get-Member -MemberType *Property) {
+					$right_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties)
+				}
+			} else {
+				$right_properties["Value"] = get_new_name "Value" @($left_properties)
+			}
+			if ($CustomProperty) {
+				foreach($ip in (fill_temp_object $CustomProperty $LeftObject[0] $RightObject[0]) | Get-Member -MemberType *Property) {
+					$custom_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties, $custom_properties)
+				}
+			}
+		}
+		
+		if ($is_begin) {
+			init_hashtables 
+			$is_begin = $false
+		}
         
 		for($i = 0; $i -lt $LeftObject.Count; $i++) {
 			$left_rows += $LeftObject[$i]
@@ -581,12 +582,12 @@ function Join-Object
 				$right_item = $RightObject[$j]
 				
 				if ( !($FilterScript.Invoke($left_item, $right_item))) {continue}
-                
+				
 				$left_matches_count[$left_matches_count.Count-1]++
 				$right_matches_count[$j]++
 				
 				$out = New-Object -TypeName PSobject
-                add $out $left_item $($LeftProperty) $left_properties
+				add $out $left_item $($LeftProperty) $left_properties
 				add $out $right_item $($RightProperty) $right_properties
 				if($CustomProperty) {
 					add_properties $out (fill_temp_object $CustomProperty $left_item $right_item) $custom_properties
@@ -610,11 +611,11 @@ function Join-Object
 		if ($Type -eq "AllInBoth" -or $Type -eq "AllInRight") {
 			for ($i = 0; $i -lt $RightObject.Count; $i++) {
 				if ($right_matches_count[$i] -eq 0) {
-                    $out = New-Object -TypeName PSobject    
-                    add $out $null $null $left_properties
+					$out = New-Object -TypeName PSobject    
+					add $out $null $null $left_properties
 					add $out $RightObject[$i] $($RightProperty) $right_properties
-                    add $out $null $null $custom_properties
-                    $out
+					add $out $null $null $custom_properties
+					$out
 				}
 			}
 		}

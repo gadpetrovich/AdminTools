@@ -48,10 +48,10 @@ $null = [System.Reflection.Assembly]::LoadWithPartialName("System.ServiceProcess
    Приведенные команды запускают на компьютере "pc-remote" службу "servicename".  
  
  .Link
-	Get-Service
-	Start-Service
-	Stop-RemoteService
-	
+   Get-Service
+   Start-Service
+   Stop-RemoteService
+
 #>
 function Start-RemoteService
 {
@@ -107,26 +107,25 @@ function Start-RemoteService
 				"ServiceControllers" { 
 					foreach ($i in $InputObject) {
 						Write-Verbose ("Компьютер " + $i.MachineName)
-		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
-		                		                
-                        func $i.ServiceName $i.MachineName
+						if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
+
+						func $i.ServiceName $i.MachineName
 					}
 				} 
 				"Normal" { 
 					foreach($computer in $ComputerName) {
-                        Write-Verbose "Компьютер $Computer"            
-		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
-		                			
+						Write-Verbose "Компьютер $Computer"            
+						if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
+
 						foreach($service in $Name) {
-                            if ($service -eq "" -or $service -eq $null) {
-                				throw "Не указано имя сервиса"
-                			}
+							if ($service -eq "" -or $service -eq $null) {
+								throw "Не указано имя сервиса"
+							}
 							func $service $computer
 						}
 					}
 				}
 			}
-			
 			
 		} catch {
 			throw $_
@@ -182,9 +181,9 @@ function Start-RemoteService
    Приведенные команды останавливают на компьютере "pc-remote" службу "servicename".  
   
  .Link
-	Get-Service
-	Stop-Service
-	Start-RemoteService
+   Get-Service
+   Stop-Service
+   Start-RemoteService
 #>
 function Stop-RemoteService
 {
@@ -214,7 +213,7 @@ function Stop-RemoteService
 				if ($s.Status -eq "Stopped") {
 					Write-Warning ("Сервис " + $s.Name + " уже остановлен")
 					$result = "Stopped"
-				} else {							
+				} else {
 					if ($pscmdlet.ShouldProcess(($s.Name + " на компьютере $computer"))) {	
 						try { 
 							$a.Stop() 
@@ -241,20 +240,20 @@ function Stop-RemoteService
 				"ServiceControllers" { 
 					foreach ($i in $InputObject) {
 						Write-Verbose ("Компьютер " + $i.MachineName)
-		              	if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
-		                
-                        func $i.ServiceName $i.MachineName
+						if(!(Test-Connection -ComputerName $i.MachineName -Count 1 -ea 0)) { throw "Компьютер " + $i.MachineName + " недоступен"}
+						
+						func $i.ServiceName $i.MachineName
 					}
 				} 
 				"Normal" { 
 					foreach($computer in $ComputerName) {
-                        Write-Verbose "Компьютер $Computer"            
-		              	if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
-		                			
+						Write-Verbose "Компьютер $Computer"            
+						if(!(Test-Connection -ComputerName $Computer -Count 1 -ea 0)) { throw "Компьютер $computer недоступен"}
+
 						foreach($service in $Name) {
-                            if ($service -eq "" -or $service -eq $null) {
-                				throw "Не указано имя сервиса"
-                			}
+							if ($service -eq "" -or $service -eq $null) {
+								throw "Не указано имя сервиса"
+							}
 							func $service $computer
 						}
 					}
@@ -263,7 +262,6 @@ function Stop-RemoteService
 			
 		} catch {
 			throw $_
-			
 		}
 	}
 	end{}

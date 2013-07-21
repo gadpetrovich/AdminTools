@@ -94,7 +94,7 @@ function Get-DiskUsageLinear($LiteralPath = ".", [int]$Depth = [int]::MaxValue, 
 		} else {
 			# обычный файл
 			$sizes[$level] += $file.Length
-			$indexes[$level]++			
+			$indexes[$level]++
 		}
 	}
 }
@@ -194,7 +194,7 @@ function Get-DiskUsageRecursive(
    Get-DiskUsage 'C:\Program Files' -RecursiveAlgorithm | ft -AutoSize FullName, Length
    
  .Example
-	# Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
+   # Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
    Get-DiskUsage 'C:\Program Files' -ShowProgress -ShowLevel | ? {$_.Level -eq 1} | sort Length -Descending | select FullName, Length -First 10 | Update-Length | ft -AutoSize
 #>
 function Get-DiskUsage(
@@ -309,7 +309,7 @@ function Update-Length
 				$obj = $prop_list.($ip.Name)
 				if ($obj -is [int32] -or $obj -is [int64] -or $obj -is [UInt64] -or $obj -is [uint32]) {
 					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (ConvertTo-HumanReadable $prop_list.($ip.Name)) -force
-                }
+				}
 			}
 		}
 		
@@ -317,7 +317,7 @@ function Update-Length
 			foreach($p in $NumericProperty) { 
 				addProperty $i ($i | select $p)
 			}
-            $i
+			$i
 		}
 	}
 	end{}

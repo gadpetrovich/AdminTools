@@ -1,12 +1,12 @@
 ﻿
 function check_user_into_admin_group([string]$UserName, [ADSI]$group)
 {
-    $group_members = @($group.psbase.Invoke("Members"))
-    foreach ($member in $group_members) {
-        $m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
-        if ($UserName -ieq $m) { return $true }
-    }
-    return $false
+	$group_members = @($group.psbase.Invoke("Members"))
+	foreach ($member in $group_members) {
+		$m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
+		if ($UserName -ieq $m) { return $true }
+	}
+	return $false
 }
 
 # http://social.technet.microsoft.com/Forums/ru-RU/scrlangru/thread/c44049a6-7c8b-462e-9bb9-61ce1e16f4ab/
@@ -34,7 +34,7 @@ function Add-UserToAdmin
 			$admgrp_name = $col_groups.Name
 			$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
 			$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
-				
+			
 			if(-not (check_user_into_admin_group $UserName $group)) {
 				$group.Add("WinNT://$domain_name/$UserName")
 			} else {
