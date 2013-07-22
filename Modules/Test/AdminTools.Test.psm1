@@ -538,7 +538,7 @@ function Join-Object
 				switch ($i) {
 					0 { $new_name = $Name }
 					1 { $new_name = "Join$Name" }
-					2 { $new_name = "Join$Name$i" }
+					default { $new_name = "Join$Name$i" }
 				}
 				foreach ($hash in $hash_list) {
 					if ($hash.ContainsValue($new_name)) { continue name_index }
