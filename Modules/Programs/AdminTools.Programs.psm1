@@ -74,7 +74,7 @@ function Get-Program
 			}
 			
 			$regdata = Get-RegKeyLastWriteTime -ComputerName $computer -Key HKLM `
-				-SubKey $AppDetails.name.Substring($AppDetails.Name.IndexOf("\")+1)
+				-SubKey $AppDetails.name.Substring($AppDetails.Name.IndexOf("\")+1) -NoEnumKey
 			
 			return $regdata.LastWriteTime
 		}
