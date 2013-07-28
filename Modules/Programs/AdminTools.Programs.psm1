@@ -11,7 +11,10 @@
  
  .Parameter AppMatch
   Регулярное выражения для поиска программы по ее названию. Может использоваться для перадачи объектов по конвейеру.
-
+  
+ .Parameter ShowUpdates
+  Отображать обновления.
+  
  .Outputs
   PSObject. Содержит следующие параметры
   [string]AppName
@@ -54,8 +57,8 @@ function Get-Program
 		[string]$AppMatch = "",
 		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[Alias("CN","__SERVER","Computer","CNAME")]
-		[string[]]$ComputerName = $env:computername
-		
+		[string[]]$ComputerName = $env:computername,
+		[switch]$ShowUpdates
 	)            
 
 	begin {}            
@@ -82,9 +85,16 @@ function Get-Program
 		function get_application($Computer, $AppRegistry, $App)
 		{
 			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
-			$AppDisplayName  = $AppDetails.GetValue("DisplayName")
-			if($AppDisplayName -notmatch $AppMatch ) { return }
-			if(!$AppDisplayName) { return }
+			$IsMinorUpgrade = $AppDetails.GetValue("IsMinorUpgrade")
+			$AppDisplayName = $AppDetails.GetValue("DisplayName")
+			$ReleaseType = $AppDetails.GetValue("ReleaseType")
+			
+			$break = $false;
+			if ($AppDisplayName -notmatch $AppMatch ) { $break = $true }
+			if (!$AppDisplayName) { $break = $true }
+			if (!$ShowUpdates -and $IsMinorUpgrade -ne $null) { $break = $true }
+			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
+			if ($break) { $AppDetails.Close(); return }
 			
 			$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, `
 				InstallLocation, UninstallKey, QuietUninstallKey, AppGUID
@@ -103,7 +113,7 @@ function Get-Program
 		}
 		
 		function get_applications($Computer, $UninstallRegKey) {
-			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)     
+			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)
 			if ($UninstallRef -eq $null) { return }
 			$Applications = $UninstallRef.GetSubKeyNames()
 			$UninstallRef.Close()
@@ -116,7 +126,7 @@ function Get-Program
 		{
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
-				if(!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
+				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
 					throw "Компьютер $ComputerName не отвечает"
 				}
 				
