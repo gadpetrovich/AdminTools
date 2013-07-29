@@ -10,10 +10,10 @@
   Компьютер, для которого требуется получить список программ, по умолчанию локальный. Может использоваться для перадачи объектов по конвейеру.
  
  .Parameter AppMatch
-  Регулярное выражения для поиска программы по ее названию. Может использоваться для перадачи объектов по конвейеру.
+  Регулярное выражение для поиска программы по ее названию. Может использоваться для перадачи объектов по конвейеру.
   
  .Parameter ShowUpdates
-  Отображать обновления.
+  Если установлен данный переключатель, то будут выводиться обновления.
   
  .Outputs
   PSObject. Содержит следующие параметры
@@ -85,15 +85,15 @@ function Get-Program
 		function get_application($Computer, $AppRegistry, $App)
 		{
 			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
-			$IsMinorUpgrade = $AppDetails.GetValue("IsMinorUpgrade")
 			$AppDisplayName = $AppDetails.GetValue("DisplayName")
 			$ReleaseType = $AppDetails.GetValue("ReleaseType")
+			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
 			
 			$break = $false;
 			if ($AppDisplayName -notmatch $AppMatch ) { $break = $true }
 			if (!$AppDisplayName) { $break = $true }
-			if (!$ShowUpdates -and $IsMinorUpgrade -ne $null) { $break = $true }
 			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
+			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
 			if ($break) { $AppDetails.Close(); return }
 			
 			$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, `
