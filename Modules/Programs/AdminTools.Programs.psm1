@@ -359,6 +359,7 @@ function Uninstall-Program
 		
 		$app_name = ""
 		$output_data = @("")
+		
 		try {
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
 			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
@@ -381,7 +382,7 @@ function Uninstall-Program
 				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName")) {
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
-				remove_app
+				. remove_app
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения удаления: $(Get-Date)"
 			} else {
@@ -511,7 +512,7 @@ function Install-Program()
 		[switch]$Force
 	)
 	begin {}
-	process {
+	process {	
 		function get_cmd() {
 			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
 			if ($Interactive) { $_cmd += "-i " }
@@ -578,7 +579,7 @@ function Install-Program()
 				
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска установки: $before_install_date"
-				add_program
+				. add_program
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения установки: $(Get-Date)"
 			}
