@@ -162,6 +162,29 @@ function Start-ProgressSleep
 		Write-Progress  -Activity $Activity -Status "Выход" -Completed
 	}
 }
+
+function Select-Choice {
+	param(
+		[Parameter(Mandatory = $true)]
+		[string]$Caption,
+		[string]$Message,
+		[Parameter(Mandatory = $true)]
+		[ValidateNotNullOrEmpty()]
+		[string[]]$Choices,
+		[string[]]$ChoiceDescriptions = $null,
+		[int]$DefaultChoice = 0
+	)
+	$list = @()
+	for ($i = 0; $i -lt $Choices.Length; $i++) {
+		if ($ChoiceDescriptions -eq $null -or $ChoiceDescriptions.Lenght -ne $Choices) {
+			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i]
+		} else {
+			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i], $ChoiceDescriptions[$i]
+		}
+	}
+	$choicesList = [System.Management.Automation.Host.ChoiceDescription[]]$list
+	$host.ui.PromptForChoice($Caption, $Message, $choicesList, $DefaultChoice)
+}
 function Get-RegKeyLastWriteTime {
 	<#
 	.SYNOPSIS
