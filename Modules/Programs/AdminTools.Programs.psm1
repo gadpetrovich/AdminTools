@@ -233,6 +233,10 @@ function Wait-WMIRestartComputer
 	}
 }
 
+function Get-RemoteCmd([string]$ComputerName, [string] $cmd) 
+{
+	return "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s $cmd"
+}
 
 <# 
  .Synopsis
@@ -320,7 +324,7 @@ function Uninstall-Program
 	begin {}
 	process {
 		function get_cmd() {
-			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+			$_cmd = ""
 			if ($Interactive) { $_cmd += "-i " }
 			
 			if ($app.QuietUninstallKey -ne $null) {
@@ -349,7 +353,7 @@ function Uninstall-Program
 		function remove_app() {
 			$uninstall_key = $app.UninstallKey
 			
-			$_cmd = get_cmd
+			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
@@ -514,7 +518,7 @@ function Install-Program()
 	begin {}
 	process {	
 		function get_cmd() {
-			$_cmd = "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s "
+			$_cmd = ""
 			if ($Interactive) { $_cmd += "-i " }
 			
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
@@ -546,7 +550,7 @@ function Install-Program()
 		}
 		
 		function add_program() {
-			$_cmd = get_cmd
+			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
