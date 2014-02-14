@@ -356,7 +356,7 @@ function Uninstall-Program
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding cp866 windows-1251
 			} catch {}
 			$return_value = $LastExitCode
 		}
@@ -382,8 +382,10 @@ function Uninstall-Program
 			
 			$app_name = $app.AppName
 			$before_uninstall_date = Get-Date
-			if (($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", "")) -and
-				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName")) {
+			if (
+				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and
+				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))
+			) {
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
 				. remove_app
@@ -553,7 +555,7 @@ function Install-Program()
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding cp866 windows-1251
 			} catch {}
 			$exit_code = $LastExitCode
 		}
@@ -578,9 +580,10 @@ function Install-Program()
 			
 			$before_install_state = Get-Program -ComputerName $ComputerName
 			
-			if (($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", "")) -and
-				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName")) {
-				
+			if (
+				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
+				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))
+			) {	
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска установки: $before_install_date"
 				. add_program
