@@ -356,7 +356,13 @@ function Uninstall-Program
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
+					if ([int]$_[1] -lt 32) { 
+						$_ | ConvertTo-Encoding utf-16 cp866
+					} else {
+						$_ | ConvertTo-Encoding windows-1251 cp866
+					}
+				}
 			} catch {}
 			$return_value = $LastExitCode
 		}
@@ -555,7 +561,13 @@ function Install-Program()
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | ConvertTo-Encoding windows-1251 cp866
+				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
+					if ([int]$_[1] -lt 32) { 
+						$_ | ConvertTo-Encoding utf-16 cp866
+					} else {
+						$_ | ConvertTo-Encoding windows-1251 cp866
+					}
+				}
 			} catch {}
 			$exit_code = $LastExitCode
 		}
