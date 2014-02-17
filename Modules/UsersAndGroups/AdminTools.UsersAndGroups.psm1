@@ -25,7 +25,8 @@ function Add-UserToAdmin
 
 	try {
 		$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-		if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
+		if ($ComputerName -eq $env:computername -and
+			!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 			throw "Для добавления пользователя в администраторы требуются права администратора"
 		}
 		
@@ -62,7 +63,8 @@ function Remove-UserFromAdmin
 	
 	try {
 		$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-		if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
+		if ($ComputerName -eq $env:computername -and
+			!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 			throw "Для удаления пользователя из администраторов требуются права администратора"
 		}
 		

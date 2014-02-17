@@ -372,7 +372,8 @@ function Uninstall-Program
 		
 		try {
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
+			if ($ComputerName -eq $env:computername -and
+				!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для удаления приложения требуются права администратора"
 			}
 			
@@ -390,7 +391,7 @@ function Uninstall-Program
 			$before_uninstall_date = Get-Date
 			if (
 				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and
-				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name на компьютере $ComputerName", ""))
+				($Force -or $pscmdlet.ShouldContinue("Удаление программы $app_name с компьютера $ComputerName", ""))
 			) {
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска удаления: $before_uninstall_date"
@@ -577,7 +578,8 @@ function Install-Program()
 		$before_install_date = Get-Date
 		try {
 			$current_principal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() ) 
-			if (!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
+			if ($ComputerName -eq $env:computername -and
+				!$current_principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) { 
 				throw "Для установки приложения требуются права администратора"
 			}
 			
@@ -594,7 +596,7 @@ function Install-Program()
 			
 			if (
 				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
-				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютере $ComputerName", ""))
+				($Force -or $pscmdlet.ShouldContinue("Установка программы $ProgSource на компьютер $ComputerName", ""))
 			) {	
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время запуска установки: $before_install_date"
