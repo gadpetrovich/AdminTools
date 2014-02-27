@@ -112,17 +112,24 @@ function Assert-PSWindow ()
 }
 
 #http://xaegr.wordpress.com/2007/01/24/decoder/
-function ConvertTo-Encoding ([string]$From, [string]$To){  
-	Begin{  
-		$encFrom = [System.Text.Encoding]::GetEncoding($from)  
-		$encTo = [System.Text.Encoding]::GetEncoding($to)  
-	}  
-	Process{  
-		$bytes = $encTo.GetBytes($_)  
-		$bytes = [System.Text.Encoding]::Convert($encFrom, $encTo, $bytes)  
-		$encTo.GetString($bytes)  
-	}  
-}  
+function ConvertTo-Encoding() {
+	[cmdletbinding()]
+	param (
+		[parameter(ValueFromPipeline=$true)]
+		[string]$String,
+		[string]$From, 
+		[string]$To
+	)
+	begin {} 
+	process { 	
+		$encFrom = [System.Text.Encoding]::GetEncoding($from)
+		$encTo = [System.Text.Encoding]::GetEncoding($to)
+		$bytes = $encTo.GetBytes($String)
+		$bytes = [System.Text.Encoding]::Convert($encFrom, $encTo, $bytes)
+		$encTo.GetString($bytes)
+	}
+	end {}
+}
 
 function Get-Property ()
 {

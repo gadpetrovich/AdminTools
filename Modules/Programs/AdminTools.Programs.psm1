@@ -127,7 +127,7 @@ function Get-Program
 			foreach($Computer in $ComputerName) {            
 				Write-Verbose "Берем список программ из $Computer"            
 				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
-					throw "Компьютер $ComputerName не отвечает"
+					throw "Компьютер $Computer не отвечает"
 				}
 				
 				$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
@@ -358,9 +358,9 @@ function Uninstall-Program
 			try {
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
 					if ([int]$_[1] -lt 32) { 
-						$_ | ConvertTo-Encoding utf-16 cp866
+						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
-						$_ | ConvertTo-Encoding windows-1251 cp866
+						$_ | ConvertTo-Encoding -From windows-1251 -To cp866
 					}
 				}
 			} catch {}
@@ -564,9 +564,9 @@ function Install-Program()
 			try {
 				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
 					if ([int]$_[1] -lt 32) { 
-						$_ | ConvertTo-Encoding utf-16 cp866
+						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
-						$_ | ConvertTo-Encoding windows-1251 cp866
+						$_ | ConvertTo-Encoding -From windows-1251 -To cp866
 					}
 				}
 			} catch {}
