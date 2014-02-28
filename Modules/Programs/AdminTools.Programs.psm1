@@ -122,12 +122,12 @@ function Get-Program
 			}
 		}
 		
-		try
-		{
-			foreach($Computer in $ComputerName) {            
+		foreach($Computer in $ComputerName) {  
+			try {          
 				Write-Verbose "Берем список программ из $Computer"            
 				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
-					throw "Компьютер $Computer не отвечает"
+					Write-Error "Компьютер $Computer не отвечает"
+					Continue
 				}
 				
 				$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
@@ -138,10 +138,10 @@ function Get-Program
 				foreach ($key in $keys) {
 					get_applications $computer $key
 				}
-				$HKLM.Close()
-			}            
-		} catch {
-			throw $_
+				$HKLM.Close()            
+			} catch {
+				Write-Error $_
+			}
 		}
 	}            
 
@@ -179,7 +179,7 @@ function Wait-InstallProgram
 		}
 		Write-Verbose "Завершение ожидания установки/удаления программы, время: $(Get-Date)"
 	} catch {
-		throw $_
+		Write-Error $_
 	}
 }
 
@@ -229,7 +229,7 @@ function Wait-WMIRestartComputer
 		}
 		Write-Verbose "Перезагрузка завершена: $(Get-Date)"
 	} catch {
-		throw $_
+		Write-Error $_
 	}
 }
 
@@ -412,7 +412,7 @@ function Uninstall-Program
 			}
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			throw $_
+			Write-Error $_
 		} finally {
 			
 			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
@@ -619,7 +619,7 @@ function Install-Program()
 			if ($exit_code -ne 0 -and $exit_code -ne 3010) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
-			throw $_
+			Write-Error $_
 		} finally {
 		
 			if ($diff) {

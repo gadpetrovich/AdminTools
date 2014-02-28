@@ -128,7 +128,7 @@ function Start-RemoteService
 			}
 			
 		} catch {
-			throw $_
+			Write-Error $_
 		}
 	}
 	end{}
@@ -261,7 +261,7 @@ function Stop-RemoteService
 			}
 			
 		} catch {
-			throw $_
+			Write-Error $_
 		}
 	}
 	end{}

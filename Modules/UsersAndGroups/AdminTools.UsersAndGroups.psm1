@@ -44,7 +44,7 @@ function Add-UserToAdmin
 			}
 		}
 	} catch {
-		throw $_
+		Write-Error $_
 	}
 }
 
@@ -82,7 +82,7 @@ function Remove-UserFromAdmin
 			}
 		}
     } catch {
-		throw $_
+		Write-Error $_
 	}
 }
 
@@ -114,6 +114,6 @@ function Get-AdminUsers
 			$output
 		}
 	} catch {
-		throw $_
+		Write-Error $_
 	}
 }
