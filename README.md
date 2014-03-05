@@ -4,7 +4,7 @@
 
 Установка
 ---------
-Скопируте AdminTools в любой каталог, указанный в переменной `$env:PSModulePath`
+Запустите скрипт Install.ps1
 
 Список модулей
 --------------
@@ -79,17 +79,17 @@ Get-ProcessorInfo
 
 Get-MotherboardInfo
 
-Get-OnBoardDeviceInfo - Список устройств, встроенных в материнскую плату.
+Get-OnBoardDeviceInfo
 
-Get-PhysicalMemoryInfo - Список модулей памяти, расположенных на материнской плате.
+Get-PhysicalMemoryInfo
 
-Get-SoundDeviceInfo - Список звуковых карт.
+Get-SoundDeviceInfo
 
-Get-VideoControllerInfo - Список видеокарт.
+Get-VideoControllerInfo
 
-Get-NetworkAdapterInfo - Список сетевых карт.
+Get-NetworkAdapterInfo
 
-Get-NetworkAdapterConfigurationInfo - Список настроек сетевых карт.
+Get-NetworkAdapterConfigurationInfo
 
 Алиасы
 ------
