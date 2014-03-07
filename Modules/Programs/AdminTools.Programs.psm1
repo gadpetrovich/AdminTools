@@ -252,7 +252,7 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
  .Parameter AppGUID
   Guid деинсталлируемой программы. Может использоваться для перадачи объектов по конвейеру.
 
- .Parameter EmptyDefaultParams
+ .Parameter NoDefaultParams
   Убирает стандартные параметры удаления nsis и msiexec. Не влияет на программы, у которых есть параметр QuietUninstallKey.
   
  .Parameter Interactive
@@ -260,6 +260,9 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
  
  .Parameter Force
   Подавляет запрос на удаление программы. Для дополнительных запросов можно использовать параметр Confirm.
+ 
+ .Parameter PassThru
+  Возвращает объекты, описывающие добавленные программы. По умолчанию эта функция не формирует никаких выходных данных.
  
  .Outputs
   PSObject. Содержит следующие параметры
@@ -316,9 +319,11 @@ function Uninstall-Program
 		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[switch]$EmptyDefaultParams,
+		[Alias("EmptyDefaultParams")]
+		[switch]$NoDefaultParams,
 		[switch][Alias("Visible")]$Interactive,
-		[switch]$Force
+		[switch]$Force,
+		[switch]$PassThru
 	)          
 	
 	begin {}
@@ -331,13 +336,13 @@ function Uninstall-Program
 				$_cmd += $app.QuietUninstallKey
 			} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
 				$params = "/x `"$AppGUID`" "
-				if (!$EmptyDefaultParams) {
+				if (!$NoDefaultParams) {
 					$params += "/qn"
 				}
 				
 				$_cmd += "msiexec $params"
 			} else {
-				if (!$EmptyDefaultParams) {
+				if (!$NoDefaultParams) {
 					$params = "/S /x /silent /uninstall /qn /quiet /norestart"
 				} 
 				if ($uninstall_key.IndexOf('"') -eq -1 -and $uninstall_key.Split().Count -gt 1) {
@@ -403,10 +408,11 @@ function Uninstall-Program
 			}
 			
 			Write-Verbose "Получаем список событий, связанных с удалением"
-			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
-			$event_message = @()
-			foreach($i in $events) { $event_message += $i.message }
-			
+			if ($PassThru) {
+				$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_uninstall_date)
+				$event_message = @()
+				foreach($i in $events) { $event_message += $i.message }
+			}
 			if ($return_value -ne 0) {
 				throw "Не удалось удалить приложение $app_name." + ([String]::Join("`n", $output_data)) 
 			}
@@ -414,20 +420,21 @@ function Uninstall-Program
 			if ($exit_code -eq 0) {	$exit_code = -1 }
 			Write-Error $_
 		} finally {
-			
-			$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
-			$OutputObj.ComputerName = $ComputerName
-			$OutputObj.AppGUID = $AppGUID
-			$OutputObj.AppName = $app_name
-			$OutputObj.ReturnValue = $return_value
-			if ($output_data -ne $null -and $output_data.Count -gt 0) { 
-				$OutputObj.Text = $output_data[$output_data.Count-1]
+			if ($PassThru) {
+				$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
+				$OutputObj.ComputerName = $ComputerName
+				$OutputObj.AppGUID = $AppGUID
+				$OutputObj.AppName = $app_name
+				$OutputObj.ReturnValue = $return_value
+				if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+					$OutputObj.Text = $output_data[$output_data.Count-1]
+				}
+				$OutputObj.EventMessage = $event_message
+				$OutputObj.StartTime = $before_uninstall_date.ToString()
+				$OutputObj.EndTime = (Get-Date).ToString()
+				
+				$OutputObj
 			}
-			$OutputObj.EventMessage = $event_message
-			$OutputObj.StartTime = $before_uninstall_date.ToString()
-			$OutputObj.EndTime = (Get-Date).ToString()
-			
-			$OutputObj
 		}
 	}
 	end {}
@@ -439,7 +446,7 @@ function Uninstall-Program
   Устанавливает программу из указанного источника.
 
  .Description
-  Устанавливает программу из указанного источника. Инсталляция производится с тихом режиме, для этого используются ключи "/quiet /norestart /qn" для нестандартных установщиков и "/S /silent /quiet /norestart /q /qn" для msi-пакетов. Для инсталляторов, не поддерживающих выше указанные ключи, нужно установить параметры UseOnlyInstallParams:$true и InstallParams с требуемыми ключами.
+  Устанавливает программу из указанного источника. Инсталляция производится с тихом режиме, для этого используются ключи "/quiet /norestart /qn" для нестандартных установщиков и "/S /silent /quiet /norestart /q /qn" для msi-пакетов. Для инсталляторов, не поддерживающих выше указанные ключи, нужно установить параметры NoDefaultParams:$true и InstallParams с требуемыми ключами.
  
  .Parameter ComputerName
   Компьютер, на который требуется установить программу. Может использоваться для перадачи объектов по конвейеру.
@@ -450,7 +457,7 @@ function Uninstall-Program
  .Parameter InstallParams
   Дополнительные параметры установки.
  
- .Parameter UseOnlyInstallParams
+ .Parameter NoDefaultParams
   Использовать для установки только параметры из InstallParams.
   
  .Parameter Interactive
@@ -458,7 +465,10 @@ function Uninstall-Program
   
  .Parameter Force
   Подавляет запрос на установку программы. Для дополнительных запросов можно использовать параметр Confirm.
-  
+ 
+ .Parameter PassThru
+  Возвращает объекты, описывающие удаленные программы. По умолчанию эта функция не формирует никаких выходных данных.
+ 
  .Outputs
   PSObject. Содержит следующие параметры
   [string]ComputerName - имя компьютера
@@ -520,9 +530,11 @@ function Install-Program()
 		[string]$InstallParams = "", 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
-		[switch]$UseOnlyInstallParams,
+		[Alias("UseOnlyInstallParams")]
+		[switch]$NoDefaultParams,
 		[switch][Alias("Visible")]$Interactive,
-		[switch]$Force
+		[switch]$Force,
+		[switch]$PassThru
 	)
 	begin {}
 	process {	
@@ -531,7 +543,7 @@ function Install-Program()
 			if ($Interactive) { $_cmd += "-i " }
 			
 			if ($file.Extension -ieq ".msi" -or $file.Extension -ieq ".msp") {
-				if (!$UseOnlyInstallParams) {
+				if (!$NoDefaultParams) {
 					$params = "/quiet /norestart /qn"
 				}
 				if ($file.Extension -ieq ".msi") {
@@ -542,14 +554,14 @@ function Install-Program()
 				
 				$_cmd += "msiexec $install_type `"$ProgSource`" $params $InstallParams"
 			} elseif ($file.Extension -ieq ".msu") {
-				if (!$UseOnlyInstallParams) {
+				if (!$NoDefaultParams) {
 					$params = "/quiet /norestart"
 				}
 				
 				$_cmd += "wusa `"$ProgSource`" $params $InstallParams"
 				#ошибка 3010 сигнализирует о необходимости перезагрузки компьютера
 			} else {
-				if (!$UseOnlyInstallParams) {
+				if (!$NoDefaultParams) {
 					$params = "/S /silent /quiet /norestart /q /qn"
 				} 
 				
@@ -604,27 +616,45 @@ function Install-Program()
 				Wait-InstallProgram $ComputerName
 				Write-Verbose "Время завершения установки: $(Get-Date)"
 			}
-			Write-Verbose "Получаем список программ"
-			$after_install_state = Get-Program -ComputerName $ComputerName
-			if ($before_install_state -eq $null) {
-				$diff = @($after_install_state)
-			} else {
-				$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
+			if ($PassThru) {
+				Write-Verbose "Получаем список программ"
+				$after_install_state = Get-Program -ComputerName $ComputerName
+				if ($before_install_state -eq $null) {
+					$diff = @($after_install_state)
+				} else {
+					$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
+				}
+				Write-Verbose "Получаем список событий, связанных с установкой"
+				$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
+				$event_message = @()
+				foreach($i in $events) { $event_message += $i.message }
 			}
-			Write-Verbose "Получаем список событий, связанных с установкой"
-			$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
-			$event_message = @()
-			foreach($i in $events) { $event_message += $i.message }
-			
 			if ($exit_code -ne 0 -and $exit_code -ne 3010) { throw "Произошла ошибка во время установки приложения $ProgSource." + ([String]::Join("`n", $output_data)) }
 		} catch {
 			if ($exit_code -eq 0) {	$exit_code = -1 }
 			Write-Error $_
 		} finally {
-		
-			if ($diff) {
-				foreach( $i in $diff) {
-					$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, AppName, AppVersion, AppVendor, AppGUID, StartTime, EndTime
+			if ($PassThru) {
+				if ($diff) {
+					foreach( $i in $diff) {
+						$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, AppName, AppVersion, AppVendor, AppGUID, StartTime, EndTime
+						$OutputObj.ComputerName = $ComputerName
+						$OutputObj.ProgSource = $ProgSource
+						$OutputObj.ReturnValue = $exit_code
+						$OutputObj.EventMessage = $event_message
+						if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+							$OutputObj.OutputData = $output_data[$output_data.Count-1]
+						}
+						$OutputObj.AppName = $i.AppName
+						$OutputObj.AppVersion = $i.AppVersion
+						$OutputObj.AppVendor = $i.AppVendor
+						$OutputObj.AppGUID = $i.AppGUID
+						$OutputObj.StartTime = $before_install_date.ToString()
+						$OutputObj.EndTime = (Get-Date).ToString()
+						$OutputObj
+					}
+				} else {
+					$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
 					$OutputObj.ComputerName = $ComputerName
 					$OutputObj.ProgSource = $ProgSource
 					$OutputObj.ReturnValue = $exit_code
@@ -632,28 +662,12 @@ function Install-Program()
 					if ($output_data -ne $null -and $output_data.Count -gt 0) { 
 						$OutputObj.OutputData = $output_data[$output_data.Count-1]
 					}
-					$OutputObj.AppName = $i.AppName
-					$OutputObj.AppVersion = $i.AppVersion
-					$OutputObj.AppVendor = $i.AppVendor
-					$OutputObj.AppGUID = $i.AppGUID
 					$OutputObj.StartTime = $before_install_date.ToString()
 					$OutputObj.EndTime = (Get-Date).ToString()
+				
 					$OutputObj
-				}
-			} else {
-				$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
-				$OutputObj.ComputerName = $ComputerName
-				$OutputObj.ProgSource = $ProgSource
-				$OutputObj.ReturnValue = $exit_code
-				$OutputObj.EventMessage = $event_message
-				if ($output_data -ne $null -and $output_data.Count -gt 0) { 
-					$OutputObj.OutputData = $output_data[$output_data.Count-1]
-				}
-				$OutputObj.StartTime = $before_install_date.ToString()
-				$OutputObj.EndTime = (Get-Date).ToString()
-			
-				$OutputObj
 
+				}
 			}
 		}
 	}

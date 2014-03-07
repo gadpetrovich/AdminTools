@@ -18,6 +18,9 @@ $null = [System.Reflection.Assembly]::LoadWithPartialName("System.ServiceProcess
  .Parameter InputObject
   Задает объекты ServiceController, представляющие запускаемые службы. Введите переменную, содержащую объекты, либо команду или выражение для получения объектов.
   
+ .Parameter PassThru
+  Возвращает объекты, описывающие запущенные службы. По умолчанию эта функция не формирует никаких выходных данных.
+  
  .Outputs
   Возвращаемые поля:
   ComputerName - имя компьютера
@@ -64,7 +67,8 @@ function Start-RemoteService
 		[string[]]$ComputerName = $env:computername,
 		
 		[parameter(position=0,ValueFromPipeline=$true, ParameterSetName="ServiceControllers")]
-		[System.ServiceProcess.ServiceController[]]$InputObject
+		[System.ServiceProcess.ServiceController[]]$InputObject,
+		[switch]$PassThru
 	)          
 	
 	begin{}
@@ -94,11 +98,13 @@ function Start-RemoteService
 						if ($WhatIfPreference) { $result = "Running" }
 					}
 				}
-				$OutputObj = New-Object -TypeName PSobject             
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
-				$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
-				$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
-				$OutputObj
+				if ($PassThru) {
+					$OutputObj = New-Object -TypeName PSobject             
+					$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
+					$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
+					$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
+					$OutputObj
+				}
 			}
 		}
 		try {
@@ -150,6 +156,9 @@ function Start-RemoteService
 
  .Parameter InputObject
   Задает объекты ServiceController, представляющие останавливаемые службы. Введите переменную, содержащую объекты, либо команду или выражение для получения объектов.
+ 
+ .Parameter PassThru
+  Возвращает объекты, описывающие останавливаемые службы. По умолчанию эта функция не формирует никаких выходных данных.
   
  .Outputs
   Возвращаемые поля:
@@ -196,7 +205,8 @@ function Stop-RemoteService
 		[string[]]$ComputerName = $env:computername,
 		
 		[parameter(position=0,ValueFromPipeline=$true, ParameterSetName="ServiceControllers")]
-		[System.ServiceProcess.ServiceController[]]$InputObject
+		[System.ServiceProcess.ServiceController[]]$InputObject,
+		[switch]$PassThru
 	)          
 	
 	begin{}
@@ -226,11 +236,13 @@ function Stop-RemoteService
 						if ($WhatIfPreference) { $result = "Stopped" }
 					}
 				}
-				$OutputObj = New-Object -TypeName PSobject             
-				$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
-				$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
-				$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
-				$OutputObj
+				if ($PassThru) {
+					$OutputObj = New-Object -TypeName PSobject             
+					$OutputObj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $computer
+					$OutputObj | Add-Member -MemberType NoteProperty -Name Name -Value $s.Name
+					$OutputObj | Add-Member -MemberType NoteProperty -Name Status -Value $result
+					$OutputObj
+				}
 			}
 		}
 		
