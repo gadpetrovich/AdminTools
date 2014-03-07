@@ -295,7 +295,7 @@ function Update-Length
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[PSobject]$InputObject,
+		$InputObject,
 		[parameter(position=0)]
 		[object[]]$NumericProperty = @("*Size*", "*Free*", "*Space*", "*Length*", "*Memory*", "*capacity*", "VM", "WS")
 	)  
@@ -312,12 +312,15 @@ function Update-Length
 				}
 			}
 		}
-		
-		foreach($i in $InputObject) {     
-			foreach($p in $NumericProperty) { 
-				addProperty $i ($i | select $p)
+		if ($InputerObject -Is [PSObject]) {
+			foreach($i in $InputObject) {     
+				foreach($p in $NumericProperty) { 
+					addProperty $i ($i | select $p)
+				}
+				$i
 			}
-			$i
+		} else {
+			ConvertTo-HumanReadable $InputObject
 		}
 	}
 	end{}
