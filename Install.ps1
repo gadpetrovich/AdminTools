@@ -6,7 +6,7 @@ $destPath = [System.IO.Path]::Combine($installPath, $srcDir.Name)
 if ($pscmdlet.ShouldProcess("Расширение " + $srcDir.Name) -and
 	($Force -or $pscmdlet.ShouldContinue("Установка расширения " + $srcDir.Name + " в каталог $destPath", ""))
 ) {
-	if ($WhatIfPreference -or $srcDir.FullName -ne $destPath) {
+	if ($srcDir.FullName -ne $destPath) {
 		echo ("Выполняется установка расширения " + $srcDir.Name + " в каталог $destPath")
 		if (Test-Path $destPath) {
 			echo "Удаление установленного расширения"
