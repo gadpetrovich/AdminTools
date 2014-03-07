@@ -1,6 +1,6 @@
 [cmdletbinding(SupportsShouldProcess=$True)]  
 param ([switch]$Force)
-$srcDir = Get-Item .
+$srcDir = (Get-Item $MyInvocation.InvocationName).Directory
 $installPath = ($env:PSModulePath -split ";")[0]
 $destPath = [System.IO.Path]::Combine($installPath, $srcDir.Name)
 if ($pscmdlet.ShouldProcess("Расширение " + $srcDir.Name) -and
