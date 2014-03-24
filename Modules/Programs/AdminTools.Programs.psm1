@@ -17,14 +17,14 @@
   
  .Outputs
   PSObject. Содержит следующие параметры
-  [string]AppName
-  [string]AppVersion
-  [string]AppVendor
+  [string]Name
+  [string]Version
+  [string]Vendor
   [DateTime]InstalledDate
   [string]InstallLocation
   [string]UninstallKey
   [string]QuietUninstallKey
-  [string]AppGUID
+  [string]GUID
   
  .Example
    PS C:\> Get-Program
@@ -96,17 +96,17 @@ function Get-Program
 			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
 			if ($break) { $AppDetails.Close(); return }
 			
-			$OutputObj = "" | select ComputerName, AppName, AppVersion, AppVendor, InstalledDate, `
-				InstallLocation, UninstallKey, QuietUninstallKey, AppGUID
+			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
+				InstallLocation, UninstallKey, QuietUninstallKey, GUID
 			$OutputObj.ComputerName = $Computer.ToUpper()
-			$OutputObj.AppName = $AppDisplayName
-			$OutputObj.AppVersion = $AppDetails.GetValue("DisplayVersion")
-			$OutputObj.AppVendor = $AppDetails.GetValue("Publisher")
+			$OutputObj.Name = $AppDisplayName
+			$OutputObj.Version = $AppDetails.GetValue("DisplayVersion")
+			$OutputObj.Vendor = $AppDetails.GetValue("Publisher")
 			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer 
 			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
 			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
 			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
-			$OutputObj.AppGUID = $App
+			$OutputObj.GUID = $App
 			$OutputObj
 			
 			$AppDetails.Close()
@@ -243,13 +243,13 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
   Удаляет указанную программу.
 
  .Description
-  Удаляет программу, указанную в параметре AppGUID. Деинсталляция производится с тихом режиме, для этого используются ключи "/S /x /silent /uninstall /qn /quiet /norestart" для нестандартных установщиков и "/qn" для msi-пакетов.
+  Удаляет программу, указанную в параметре GUID. Деинсталляция производится с тихом режиме, для этого используются ключи "/S /x /silent /uninstall /qn /quiet /norestart" для нестандартных установщиков и "/qn" для msi-пакетов.
  
   
  .Parameter ComputerName
   Компьютер, на котором требуется удалить программу. Может использоваться для перадачи объектов по конвейеру.
  
- .Parameter AppGUID
+ .Parameter GUID
   Guid деинсталлируемой программы. Может использоваться для перадачи объектов по конвейеру.
 
  .Parameter NoDefaultParams
@@ -267,8 +267,8 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
  .Outputs
   PSObject. Содержит следующие параметры
   [string]ComputerName - имя компьютера
-  [string]AppName      - имя программы
-  [string]AppGUID      - GUID приложения
+  [string]Name      - имя программы
+  [string]GUID      - GUID приложения
   [int]ReturnValue  - результат выполнения
   [string[]]Text         - результат выполнения в текстовом виде
   [Object[]]EventMessage - сообщения от MsiInstaller'а
@@ -285,14 +285,14 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
    Эта команда удаляет программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Get-Program appname | Uninstall-Program -Confirm
+   PS C:\> cat computers.txt | Get-Program Name | Uninstall-Program -Confirm
 
    Описание
    -----------
-   Эта команда удаляет программу "appname" на компьютерах, указанных в файле "computers.txt".
+   Эта команда удаляет программу "Name" на компьютерах, указанных в файле "computers.txt".
  
  .Example
-   PS C:\> "ComputerName, AppName
+   PS C:\> "ComputerName, Name
    >> comp1, prog1
    >> comp2, prog2 " | echo >remove_apps.csv
    >>
@@ -314,7 +314,7 @@ function Uninstall-Program
 	[cmdletbinding(SupportsShouldProcess=$True)]            
 	param (            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
-		[string]$AppGUID,
+		[string]$GUID,
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
 		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string]$ComputerName = $env:computername,
@@ -335,7 +335,7 @@ function Uninstall-Program
 			if ($app.QuietUninstallKey -ne $null) {
 				$_cmd += $app.QuietUninstallKey
 			} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
-				$params = "/x `"$AppGUID`" "
+				$params = "/x `"$GUID`" "
 				if (!$NoDefaultParams) {
 					$params += "/qn"
 				}
@@ -387,12 +387,12 @@ function Uninstall-Program
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
-			$app = Get-Program -ComputerName $ComputerName | ? { $_.AppGUID -eq $AppGUID }
+			$app = Get-Program -ComputerName $ComputerName | ? { $_.GUID -eq $GUID }
 			if ($app -eq $null) {
-				throw "Приложения с GUID = $AppGUID нет в системе"
+				throw "Приложения с GUID = $GUID нет в системе"
 			}
 			
-			$app_name = $app.AppName
+			$app_name = $app.Name
 			$before_uninstall_date = Get-Date
 			if (
 				$pscmdlet.ShouldProcess("$app_name на компьютере $ComputerName") -and
@@ -421,10 +421,10 @@ function Uninstall-Program
 			Write-Error $_
 		} finally {
 			if ($PassThru) {
-				$OutputObj = "" | Select ComputerName, AppGUID, AppName, ReturnValue, Text, EventMessage, StartTime, EndTime
+				$OutputObj = "" | Select ComputerName, GUID, Name, ReturnValue, Text, EventMessage, StartTime, EndTime
 				$OutputObj.ComputerName = $ComputerName
-				$OutputObj.AppGUID = $AppGUID
-				$OutputObj.AppName = $app_name
+				$OutputObj.GUID = $GUID
+				$OutputObj.Name = $app_name
 				$OutputObj.ReturnValue = $return_value
 				if ($output_data -ne $null -and $output_data.Count -gt 0) { 
 					$OutputObj.Text = $output_data[$output_data.Count-1]
@@ -473,10 +473,10 @@ function Uninstall-Program
   PSObject. Содержит следующие параметры
   [string]ComputerName - имя компьютера
   [string]ProgSource   - файл инсталлятора
-  [string]AppName      - имя программы
-  [string]AppVersion   - версия приложения
-  [string]AppGUID      - GUID приложения
-  [string]AppVendor    - вендор
+  [string]Name      - имя программы
+  [string]Version   - версия приложения
+  [string]GUID      - GUID приложения
+  [string]Vendor    - вендор
   [int]ReturnValue  - результат выполнения
   [object[]]EventMessage - сообщения от MsiInstaller'а
   [string[]]OutputData   - текст, выводимый установщиком в стандартный поток вывода 
@@ -491,11 +491,11 @@ function Uninstall-Program
    Эта команда устанавливает программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Install-Program appname
+   PS C:\> cat computers.txt | Install-Program Name
 
    Описание
    -----------
-   Эта команда устанавливает программу "appname" на компьютерах, указанных в файле "computers.txt".
+   Эта команда устанавливает программу "Name" на компьютерах, указанных в файле "computers.txt".
  
  .Example
    PS C:\> "ComputerName, ProgSource
@@ -622,7 +622,7 @@ function Install-Program()
 				if ($before_install_state -eq $null) {
 					$diff = @($after_install_state)
 				} else {
-					$diff = @(diff $before_install_state $after_install_state -Property AppName, AppVersion, AppVendor, AppGUID | ? { $_.SideIndicator -eq "=>" } )
+					$diff = @(diff $before_install_state $after_install_state -Property Name, Version, Vendor, GUID | ? { $_.SideIndicator -eq "=>" } )
 				}
 				Write-Verbose "Получаем список событий, связанных с установкой"
 				$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
@@ -637,7 +637,7 @@ function Install-Program()
 			if ($PassThru) {
 				if ($diff) {
 					foreach( $i in $diff) {
-						$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, AppName, AppVersion, AppVendor, AppGUID, StartTime, EndTime
+						$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, Name, Version, Vendor, GUID, StartTime, EndTime
 						$OutputObj.ComputerName = $ComputerName
 						$OutputObj.ProgSource = $ProgSource
 						$OutputObj.ReturnValue = $exit_code
@@ -645,10 +645,10 @@ function Install-Program()
 						if ($output_data -ne $null -and $output_data.Count -gt 0) { 
 							$OutputObj.OutputData = $output_data[$output_data.Count-1]
 						}
-						$OutputObj.AppName = $i.AppName
-						$OutputObj.AppVersion = $i.AppVersion
-						$OutputObj.AppVendor = $i.AppVendor
-						$OutputObj.AppGUID = $i.AppGUID
+						$OutputObj.Name = $i.Name
+						$OutputObj.Version = $i.Version
+						$OutputObj.Vendor = $i.Vendor
+						$OutputObj.GUID = $i.GUID
 						$OutputObj.StartTime = $before_install_date.ToString()
 						$OutputObj.EndTime = (Get-Date).ToString()
 						$OutputObj
