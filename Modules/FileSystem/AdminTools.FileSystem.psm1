@@ -308,11 +308,11 @@ function Update-Length
 			foreach($ip in $prop_list | Get-Member -MemberType *Property) {		
 				$obj = $prop_list.($ip.Name)
 				if ($obj -is [int32] -or $obj -is [int64] -or $obj -is [UInt64] -or $obj -is [uint32]) {
-					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (ConvertTo-HumanReadable $prop_list.($ip.Name)) -force
+					$out | Add-Member -MemberType NoteProperty -Name $ip.Name -Value (ConvertTo-HumanReadable $obj) -force
 				}
 			}
 		}
-		if ($InputerObject -Is [PSObject]) {
+		if ($InputObject -Is [PSObject]) {
 			foreach($i in $InputObject) {     
 				foreach($p in $NumericProperty) { 
 					addProperty $i ($i | select $p)
