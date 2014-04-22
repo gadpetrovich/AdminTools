@@ -38,7 +38,7 @@ function Add-UserToAdmin
 			$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 			
 			if(-not (check_user_into_admin_group $UserName $group)) {
-				$group.Add("WinNT://$domain_name/$UserName")
+				$group.Add("WinNT://$domain_name/$UserName") | Out-Null
 			} else {
 				Write-Warning "Пользователь $UserName уже добавлен в список локальных администраторов"
 			}
@@ -76,7 +76,7 @@ function Remove-UserFromAdmin
 			$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 			
 			if(check_user_into_admin_group $UserName $group) {
-				$group.Remove("WinNT://$domain_name/$UserName")
+				$group.Remove("WinNT://$domain_name/$UserName") | Out-Null
 			} else {
 				Write-Warning "Пользователь $UserName отсутствует в списке локальных администраторов"
 			}
