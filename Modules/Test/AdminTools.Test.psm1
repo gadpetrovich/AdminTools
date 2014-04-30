@@ -149,6 +149,17 @@ function Get-Property ()
 	}
 }
 
+function ConvertTo-HashTable
+{
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true)]
+		[PSObject]$InputObject
+	)
+	Process {
+		$InputObject.psobject.properties | foreach -begin {$h=@{}} -process {$h."$($_.Name)" = $_.Value} -end {$h}
+	}
+}
 
 function Start-ProgressSleep
 {
