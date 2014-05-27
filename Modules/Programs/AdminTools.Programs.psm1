@@ -562,7 +562,7 @@ function Install-Program()
 				#ошибка 3010 сигнализирует о необходимости перезагрузки компьютера
 			} else {
 				if (!$NoDefaultParams) {
-					$params = "/S /silent /quiet /norestart /q /qn"
+					$params = "/S /silent /quiet /norestart /q /qn /install"
 				} 
 				
 				$_cmd += "`"$ProgSource`" $params $InstallParams"
