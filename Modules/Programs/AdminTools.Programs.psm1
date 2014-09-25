@@ -15,6 +15,9 @@
  .Parameter ShowUpdates
   Если установлен данный переключатель, то будут выводиться обновления.
   
+ .Parameter ShowSystemComponents
+  Если установлен данный переключатель, то будут выводиться системные компоненты.
+  
  .Outputs
   PSObject. Содержит следующие параметры
   [string]Name
@@ -58,7 +61,8 @@ function Get-Program
 		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[Alias("CN","__SERVER","Computer","CNAME")]
 		[string[]]$ComputerName = $env:computername,
-		[switch]$ShowUpdates
+		[switch]$ShowUpdates,
+		[switch]$ShowSystemComponents
 	)            
 
 	begin {}            
@@ -88,12 +92,14 @@ function Get-Program
 			$AppDisplayName = $AppDetails.GetValue("DisplayName")
 			$ReleaseType = $AppDetails.GetValue("ReleaseType")
 			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
+			$SystemComponent = $AppDetails.GetValue("SystemComponent")
 			
 			$break = $false;
 			if ($AppDisplayName -notmatch $AppMatch ) { $break = $true }
 			if (!$AppDisplayName) { $break = $true }
 			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
 			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
+			if (!$ShowSystemComponents -and $SystemComponent -ne $null) { $break = $true }
 			if ($break) { $AppDetails.Close(); return }
 			
 			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
