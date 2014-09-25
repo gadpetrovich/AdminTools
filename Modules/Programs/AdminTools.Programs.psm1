@@ -99,7 +99,7 @@ function Get-Program
 			if (!$AppDisplayName) { $break = $true }
 			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
 			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
-			if (!$ShowSystemComponents -and $SystemComponent -ne $null) { $break = $true }
+			if (!$ShowSystemComponents -and $SystemComponent -gt 0) { $break = $true }
 			if ($break) { $AppDetails.Close(); return }
 			
 			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
