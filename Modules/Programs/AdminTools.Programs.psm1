@@ -3,7 +3,7 @@
   Возвращает список установленных программ.
 
  .Description
-  Функция возвращает список всех программ, установленных на указанном компьютере.
+  Функция возвращает список всех программ, установленных на указанных компьютерах.
  
   
  .Parameter ComputerName
@@ -89,29 +89,27 @@ function Get-Program
 		function get_application($Computer, $AppRegistry, $App)
 		{
 			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
-			$AppDisplayName = $AppDetails.GetValue("DisplayName")
-			$ReleaseType = $AppDetails.GetValue("ReleaseType")
-			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
-			$SystemComponent = $AppDetails.GetValue("SystemComponent")
-			$UninstallString = $AppDetails.GetValue("UninstallString")
-			$break = $false;
-			if ($AppDisplayName -notmatch $AppMatch ) { $break = $true }
-			if ($UninstallString -eq $null) { $break = $true }
-			if (!$AppDisplayName) { $break = $true }
-			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
-			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
-			if (!$ShowSystemComponents -and $SystemComponent -gt 0) { $break = $true }
-			if ($break) { $AppDetails.Close(); return }
-			
 			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
 				InstallLocation, UninstallKey, QuietUninstallKey, GUID
 			$OutputObj.ComputerName = $Computer.ToUpper()
-			$OutputObj.Name = $AppDisplayName
+			$OutputObj.Name = $AppDetails.GetValue("DisplayName")
+			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
+			$ReleaseType = $AppDetails.GetValue("ReleaseType")
+			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
+			$SystemComponent = $AppDetails.GetValue("SystemComponent")
+			
+			if (
+				!$OutputObj.Name -or
+				$OutputObj.Name -notmatch $AppMatch -or
+				!$OutputObj.UninstallKey -or
+				(!$ShowUpdates -and ($ReleaseType -imatch "(Update|Hotfix)" -or $ParentKeyName)) -or
+				(!$ShowSystemComponents -and $SystemComponent -gt 0)
+			) { $AppDetails.Close(); return }
+			
 			$OutputObj.Version = $AppDetails.GetValue("DisplayVersion")
 			$OutputObj.Vendor = $AppDetails.GetValue("Publisher")
 			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer 
 			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
-			$OutputObj.UninstallKey = $UninstallString
 			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
 			$OutputObj.GUID = $App
 			$OutputObj

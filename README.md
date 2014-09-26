@@ -19,21 +19,21 @@ Update-Length - Преобразует параметр Length в читаемы
 
 ### Programs
 
-Get-Program - Возварщает список установленных программ.
+Get-Program
 
 Wait-InstallProgram
 
 Wait-WMIRestartComputer
 
-Uninstall-Program - Удаляет указанную программу.
+Uninstall-Program
 
-Install-Program - Устанавливает программу из указанного источника.
+Install-Program
 
 ### Services
 
-Start-RemoteService - Запускает службы на удаленном компьютере.
+Start-RemoteService
 
-Stop-RemoteService - Останавливает службы на удаленном компьютере.
+Stop-RemoteService
 
 ### Test
 
