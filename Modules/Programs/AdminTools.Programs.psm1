@@ -93,9 +93,10 @@ function Get-Program
 			$ReleaseType = $AppDetails.GetValue("ReleaseType")
 			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
 			$SystemComponent = $AppDetails.GetValue("SystemComponent")
-			
+			$UninstallString = $AppDetails.GetValue("UninstallString")
 			$break = $false;
 			if ($AppDisplayName -notmatch $AppMatch ) { $break = $true }
+			if ($UninstallString -eq $null) { $break = $true }
 			if (!$AppDisplayName) { $break = $true }
 			if (!$ShowUpdates -and $ReleaseType -imatch "(Update|Hotfix)") { $break = $true }
 			if (!$ShowUpdates -and $ParentKeyName -ne $null) { $break = $true }
@@ -110,7 +111,7 @@ function Get-Program
 			$OutputObj.Vendor = $AppDetails.GetValue("Publisher")
 			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer 
 			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
-			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
+			$OutputObj.UninstallKey = $UninstallString
 			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
 			$OutputObj.GUID = $App
 			$OutputObj
@@ -135,16 +136,20 @@ function Get-Program
 					Write-Error "Компьютер $Computer не отвечает"
 					Continue
 				}
+				$key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 				
-				$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine',$computer)
-				$keys = @()
-				$keys += "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
-				$keys += "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
-				#$keys += "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Products"
-				foreach ($key in $keys) {
-					get_applications $computer $key
+				$archs = @([Microsoft.Win32.RegistryView]::Registry32)
+				$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
+				if ($arch -eq "64-bit") {
+					$archs += [Microsoft.Win32.RegistryView]::Registry64
 				}
-				$HKLM.Close()            
+				
+				foreach ($arch in $archs) {
+					$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey(
+						'LocalMachine', $computer, $arch)
+					get_applications $computer $key
+					$HKLM.Close()  
+				}
 			} catch {
 				Write-Error $_
 			}
@@ -268,7 +273,7 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
   Подавляет запрос на удаление программы. Для дополнительных запросов можно использовать параметр Confirm.
  
  .Parameter PassThru
-  Возвращает объекты, описывающие добавленные программы. По умолчанию эта функция не формирует никаких выходных данных.
+  Возвращает объекты, описывающие удаленные программы. По умолчанию эта функция не формирует никаких выходных данных.
  
  .Outputs
   PSObject. Содержит следующие параметры
