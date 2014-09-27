@@ -138,7 +138,7 @@ function Get-Program
 				
 				$archs = @([Microsoft.Win32.RegistryView]::Registry32)
 				$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
-				if ($arch -eq "64-bit") {
+				if ($arch -Match "64") {
 					$archs += [Microsoft.Win32.RegistryView]::Registry64
 				}
 				
