@@ -129,7 +129,7 @@ function Get-Program
 		
 		foreach($Computer in $ComputerName) {  
 			try {          
-				Write-Verbose "Берем список программ из $Computer"            
+				Write-Verbose "Берем список программ из $Computer по шаблону `"$AppMatch`""            
 				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
 					Write-Error "Компьютер $Computer не отвечает"
 					Continue
@@ -344,7 +344,8 @@ function Uninstall-Program
 			if ($app.QuietUninstallKey -ne $null) {
 				$_cmd += $app.QuietUninstallKey
 			} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
-				$params = "/x `"$GUID`" "
+				$uninstall_guid = [regex]::match($uninstall_key, "\w{8}-\w{4}-\w{4}-\w{4}-\w{12}").Value
+				$params = "/x {$uninstall_guid} "
 				if (!$NoDefaultParams) {
 					$params += "/qn"
 				}
