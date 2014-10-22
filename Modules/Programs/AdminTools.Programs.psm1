@@ -145,8 +145,9 @@ function Get-Program
 				foreach ($arch in $archs) {
 					$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey(
 						'LocalMachine', $computer, $arch)
-					get_applications $computer $key
+					$apps = get_applications $computer $key
 					$HKLM.Close()  
+					$apps
 				}
 			} catch {
 				Write-Error $_
