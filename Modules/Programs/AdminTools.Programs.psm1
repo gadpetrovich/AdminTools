@@ -129,7 +129,7 @@ function Get-Program
 		
 		foreach($Computer in $ComputerName) {  
 			try {          
-				Write-Verbose "Берем список программ из $Computer по шаблону `"$AppMatch`""            
+				Write-Debug "Берем список программ из $Computer по шаблону `"$AppMatch`""            
 				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
 					Write-Error "Компьютер $Computer не отвечает"
 					Continue
