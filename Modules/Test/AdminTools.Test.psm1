@@ -409,6 +409,33 @@ public static extern int RegCloseKey(
 	}
 } # End Get-RegKeyLastWriteTime function
 
+
+function Convert-PSObjectAuto
+{
+	[cmdletbinding()]            
+	 param(            
+		 [parameter(Mandatory=$true, ValueFromPipeline=$true)]            
+		 [PSObject]
+		 $Object
+	 )
+	process {
+		foreach($prop in $Object | Get-Member -MemberType *Property) {
+			$prop_name = $prop.Name
+			$result = $null
+			
+			if ([bool]::TryParse($Object.$prop_name, [ref]$result)) {}
+			elseif ([int32]::TryParse($Object.$prop_name, [ref]$result)) {}
+			elseif ([int64]::TryParse($Object.$prop_name, [ref]$result)) {}
+			elseif ([Double]::TryParse($Object.$prop_name, [ref]$result)) {}
+			else { continue }
+			
+			$Object.$prop_name = $result
+		}
+		$Object
+	}
+}
+
+
 <# 
  .Synopsis
   Объединяет два списка в один.

@@ -101,7 +101,6 @@ function Get-Program
 			if (
 				!$OutputObj.Name -or
 				$OutputObj.Name -notmatch $AppMatch -or
-				!$OutputObj.UninstallKey -or
 				(!$ShowUpdates -and ($ReleaseType -imatch "(Update|Hotfix)" -or $ParentKeyName)) -or
 				(!$ShowSystemComponents -and $SystemComponent -gt 0)
 			) { $AppDetails.Close(); return }
@@ -193,6 +192,27 @@ function Wait-InstallProgram
 	}
 }
 
+<# 
+ .Synopsis
+  Ожидание перезагрузки компьютера.
+
+ .Description
+  Функция состоит из двух фаз: ожидание выключения и включения компьютера. Опрос состояния компьютера осуществляется при помощи Win32_OperatingSystem. 
+ 
+  
+ .Parameter ComputerName
+  Компьютер, для которого следует выполнить ожидание перезагрузки.
+ 
+ .Parameter WaitSecPeriod
+  Количество секунд, затрачиваемых на паузы между опросами состояния компьютера.
+  
+ .Parameter SecTimeout
+  Время, затрачиваемое на каждую из фаз ожидания (выключение и включение).
+  
+ .Parameter DontWaitShutdown
+  Не переходить в файзу ожидания выключения компьютера.
+  
+#>
 function Wait-WMIRestartComputer
 {
 	param(
@@ -344,9 +364,14 @@ function Uninstall-Program
 			
 			if ($app.QuietUninstallKey -ne $null) {
 				$_cmd += $app.QuietUninstallKey
-			} elseif ($uninstall_key -match "msiexec" -or $uninstall_key -eq $null) {
-				$uninstall_guid = [regex]::match($uninstall_key, "\w{8}-\w{4}-\w{4}-\w{4}-\w{12}").Value
-				$params = "/x {$uninstall_guid} "
+			} elseif ($uninstall_key -match "msiexec" -or [string]::IsNullOrEmpty($uninstall_key)) {
+				$uninstall_guid = [regex]::match($uninstall_key, "\w{8}-\w{4}-\w{4}-\w{4}-\w{12}")
+				if ($uninstall_guid.Success) {
+					$params = [string]::Format("/x {{{0}}} ", $uninstall_guid.Value)
+				} else {
+					$params = "/x `"$GUID`" "
+				}
+				
 				if (!$NoDefaultParams) {
 					$params += "/qn"
 				}
@@ -398,7 +423,7 @@ function Uninstall-Program
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
-			$app = Get-Program -ComputerName $ComputerName | ? { $_.GUID -eq $GUID }
+			$app = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates | ? { $_.GUID -eq $GUID }
 			if ($app -eq $null) {
 				throw "Приложения с GUID = $GUID нет в системе"
 			}
@@ -615,7 +640,7 @@ function Install-Program()
 			$params = ""
 			
 			
-			$before_install_state = Get-Program -ComputerName $ComputerName
+			$before_install_state = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates
 			
 			if (
 				$pscmdlet.ShouldProcess("$ProgSource на компьютере $ComputerName") -and
@@ -629,7 +654,7 @@ function Install-Program()
 			}
 			if ($PassThru) {
 				Write-Verbose "Получаем список программ"
-				$after_install_state = Get-Program -ComputerName $ComputerName
+				$after_install_state = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates
 				if ($before_install_state -eq $null) {
 					$diff = @($after_install_state)
 				} else {
