@@ -86,12 +86,39 @@ function Get-Program
 			return $regdata.LastWriteTime
 		}
 		
-		function get_application($Computer, $AppRegistry, $App)
-		{
-			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
+		function get_app_object($Computer) {
 			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
 				InstallLocation, UninstallKey, QuietUninstallKey, GUID
 			$OutputObj.ComputerName = $Computer.ToUpper()
+			return $OutputObj
+		}
+		
+		function get_ie_application($Computer) {
+			$OutputObj = get_app_object $Computer
+			$OutputObj.Name = "Internet Explorer"
+			$OutputObj.Vendor = "Microsoft Corporation"
+			
+			if ($OutputObj.Name -notmatch $AppMatch) { return }
+			
+			$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer)
+			$key = $HKLM.OpenSubKey("SOFTWARE\Microsoft\Internet Explorer")
+			if ($key.getvaluenames() -contains "svcVersion") {
+				$OutputObj.Version = $key.GetValue("svcVersion")
+			} elseif ($key.getvaluenames() -contains "Version") {
+				$OutputObj.Version = $key.GetValue("Version")
+			}
+			$key.Close()
+			$HKLM.Close()
+			if ($OutputObj.Version -ne $null) {
+				$OutputObj
+			}
+			Write-Debug ("Компьютер $Computer, internet explorer версии " + $OutputObj.Version)
+		}
+		
+		function get_application($Computer, $AppRegistry, $App)
+		{
+			$OutputObj = get_app_object $Computer
+			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
 			$OutputObj.Name = $AppDetails.GetValue("DisplayName")
 			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
 			$ReleaseType = $AppDetails.GetValue("ReleaseType")
@@ -148,6 +175,8 @@ function Get-Program
 					$HKLM.Close()  
 					$apps
 				}
+				
+				get_ie_application $Computer
 			} catch {
 				Write-Error $_
 			}
