@@ -450,7 +450,7 @@ function Convert-PSObjectAuto
   Второй список для объединения. К именам свойств, совпадающим с полями из LeftObject, будет добавляться префикс "Join".
  
  .Parameter FilterScript
-  Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject.
+  Указывает блок скрипта, используемый для фильтрации объектов. Для передачи параметров в скрипт используйте param(): { param($i,$j); ... }. Переменная $i содержит объект из LeftObject, $j - из RightObject. Также можно использовать массив $Args. Переменная $Args[0] содержит объект из LeftObject, $Args[1] - из RightObject. 
   
  .Parameter LeftProperty
   Указывает список свойств из LeftObject для добавления в результирующий список. Подстановочные знаки разрешены. Если этот параметр не указан, то LeftObject будет добавлен, как значение (под именем "Value").
@@ -727,4 +727,74 @@ function Join-Object
 			}
 		}
 	}
+}
+
+function Invoke-Parallel { 
+<# 
+.SYNOPSIS 
+
+.PARAMETER ScriptBlock 
+
+.PARAMETER InputObject 
+
+.PARAMETER Throttle 
+
+.PARAMETER SleepTimer 
+
+.EXAMPLE 
+
+.FUNCTIONALITY  
+
+.NOTES 
+#> 
+	[cmdletbinding()] 
+	param( 
+        [Parameter(Mandatory=$true)] 
+        [System.Management.Automation.ScriptBlock]$ScriptBlock,
+        [Parameter(Mandatory=$true,ValueFromPipeline=$true)] 
+        [PSObject]$InputObject,
+		[Parameter(Mandatory=$false)]
+		[int]$Throttle = 5
+	) 
+	BEGIN { 
+		write-debug "begin"
+		$script:jobs = @()
+		$queue = New-Object System.Collections.ArrayList
+	} 
+ 
+	PROCESS {
+		function run_jobs() {
+			while ($queue.Count -gt 0 -and ($script:jobs | ? State -ne "Completed").Count -lt $Throttle) {
+				$job = $queue[0]
+				Write-debug "job.ScriptBlock = $($job.ScriptBlock)"
+				Write-debug "job.Object = $($job.Object)"
+				$queue.RemoveAt(0)
+				$script:jobs += Start-Job -Args $job.ScriptBlock, $job.Object, $pwd -ScriptBlock { 
+					Param($sb, $param, $pwd)
+					Set-Variable "_" $param
+					cd $pwd
+					([ScriptBlock]::Create($sb)).InvokeWithContext($null, $null, $null)
+				}
+				write-debug "jobs = $script:jobs"
+				$script:jobs | Receive-Job
+			}
+		}
+		write-debug "process"
+		write-debug "InputObject type = $($InputObject.GetType())"
+		write-debug "InputObject = $InputObject"
+		$queue.Add(@{ScriptBlock = $ScriptBlock; Object = $InputObject}) | out-null
+		run_jobs
+		write-debug "jobs = $script:jobs"
+		
+	} 
+	END { 
+		write-debug "end"
+		while ($queue.Count -gt 0) {
+			run_jobs
+			Sleep -Milliseconds 10
+		}
+        $script:jobs | Receive-Job -Wait
+		write-debug "jobs = $jobs"
+		Remove-Job $script:jobs
+    } 
 }
