@@ -13,19 +13,18 @@ function Get-NetView
 		[string]$Match
 	)
 	begin {
-		$objs = net view 
-		$objs = $objs | select -skip 3 -first ($objs.length-5)
-	}
-	process {
-		$o2 = $objs | ? { $_ -imatch $Match }
-		if ($o2 -eq $null) { return }
-		foreach ($i in $o2) {
+		$strs = net view 
+		$strs = $strs | select -skip 3 -first ($strs.length-5)
+		$objs = foreach ($i in $strs) {
 			$s = $i -split "\s+", 2
 			$obj = New-Object -TypeName PSObject
 			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")
 			$obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1]
 			$obj
 		}
+	}
+	process {
+		$objs | ? { $_.ComputerName -imatch $Match -or $_.Description -imatch $Match }
 	}
 	end { }
 }
