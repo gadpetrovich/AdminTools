@@ -617,7 +617,7 @@ function Join-Object
 		function add($out, $source, $properties, $prop_hash)
 		{			
 			if($properties -or $source -eq $null) {
-				add_properties $out ($source | select $properties) $prop_hash
+				add_properties $out ($source | select $properties -ErrorAction SilentlyContinue) $prop_hash
 			} else {
 				add_value $out $source $prop_hash
 			}		
@@ -626,7 +626,7 @@ function Join-Object
 		{
 			foreach($key in $prop_hash.Keys) {                
 				if ($prop_list) {
-					$out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $prop_list.($key)
+					$out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $prop_list.($key) -Force
 				} else {
 					$out | Add-Member -MemberType NoteProperty -Name $prop_hash[$key] -Value $null
 				}
@@ -655,14 +655,14 @@ function Join-Object
 
 		function init_hashtables() {
 			if ($LeftProperty) {
-				foreach($ip in ($LeftObject[0] | select $LeftProperty) | Get-Member -MemberType *Property) {
+				foreach($ip in ($LeftObject[0] | select $LeftProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
 					$left_properties[$ip.Name] = $ip.Name
 				}
 			} else {
 				$left_properties["Value"] = "Value"
 			}
 			if ($RightProperty) {
-				foreach($ip in ($RightObject[0] | select $RightProperty) | Get-Member -MemberType *Property) {
+				foreach($ip in ($RightObject[0] | select $RightProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
 					$right_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties)
 				}
 			} else {
@@ -728,23 +728,34 @@ function Join-Object
 	}
 }
 
-function Join-MultiObject
+function Join-Objects
 {
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
 		[ValidateNotNull()]$Objects, 
 		[parameter(Mandatory = $true)]
-		[String]$SharedProperty,
+		[Alias("JP")][String[]]$JoinProperties,
 		[parameter(Mandatory = $true)]
-		[Object[]]$Properties
+		[Object[]]$Properties,
+		[ValidateSet("AllInLeft","OnlyIfInBoth","AllInBoth", "AllInRight")]
+		[String]$Type="OnlyIfInBoth"
 	)
 	
 	process {
-		$script = { $Args[0].$SharedProperty -ieq $Args[1].$SharedProperty }
-		$res = Join-Object $objects[0] $objects[1] $script $Properties[0] $Properties[1] -Type AllInBoth
+		if ($Objects.Count -ne $Properties.Count) {
+			throw "Кол-во списков и выбранных свойств не совпадает"
+		}
+		$script = { 
+			$res = $true
+			foreach ($prop in $JoinProperties) {
+				$res = $res -and ($Args[0].$prop -ieq $Args[1].$prop)
+			}
+			$res
+		}
+		$res = Join-Object $objects[0] $objects[1] $script ($JoinProperties + $Properties[0]) $Properties[1] -Type $Type
 		for ($i = 2; $i -lt $Objects.Count; $i++) {
-			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $Properties[$i] -Type AllInBoth
+			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $Properties[$i] -Type $Type
 		}
 		$res
 	}
