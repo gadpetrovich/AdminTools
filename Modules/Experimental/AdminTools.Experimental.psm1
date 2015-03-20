@@ -728,6 +728,28 @@ function Join-Object
 	}
 }
 
+function Join-MultiObject
+{
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[ValidateNotNull()]$Objects, 
+		[parameter(Mandatory = $true)]
+		[String]$SharedProperty,
+		[parameter(Mandatory = $true)]
+		[Object[]]$Properties
+	)
+	
+	process {
+		$script = { $Args[0].$SharedProperty -ieq $Args[1].$SharedProperty }
+		$res = Join-Object $objects[0] $objects[1] $script $Properties[0] $Properties[1] -Type AllInBoth
+		for ($i = 2; $i -lt $Objects.Count; $i++) {
+			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $Properties[$i] -Type AllInBoth
+		}
+		$res
+	}
+}
+
 function Invoke-Parallel { 
 <# 
 .SYNOPSIS 
