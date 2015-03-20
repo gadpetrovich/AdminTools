@@ -557,11 +557,11 @@ function Join-Object
 	[cmdletbinding()]            
 	param(            
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[ValidateNotNull()][Alias("Left")][Object[]]$LeftObject, 
-		[ValidateNotNull()][Alias("Right")][Object[]]$RightObject,
+		[ValidateNotNull()][Alias("Left", "LO")][Object[]]$LeftObject, 
+		[ValidateNotNull()][Alias("Right", "RO")][Object[]]$RightObject,
 		[Alias("Where")][ScriptBlock]$FilterScript = { $true },
-		[Alias("LeftProperties")][Object[]]$LeftProperty = $null,
-		[Alias("RightProperties")][Object[]]$RightProperty = $null,
+		[Alias("LeftProperties", "LP")][Object[]]$LeftProperty = $null,
+		[Alias("RightProperties", "RP")][Object[]]$RightProperty = $null,
 		[Hashtable[]]$CustomProperty = $null,
 		[ValidateSet("AllInLeft","OnlyIfInBoth","AllInBoth", "AllInRight")]
 		[String]$Type="OnlyIfInBoth"
