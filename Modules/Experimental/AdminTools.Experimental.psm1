@@ -784,6 +784,7 @@ function Invoke-Parallel {
         [Parameter(Mandatory=$true)] 
         [System.Management.Automation.ScriptBlock]$ScriptBlock,
         [Parameter(Mandatory=$true,ValueFromPipeline=$true)] 
+		[AllowNull()]
         [PSObject]$InputObject,
 		[Parameter(Mandatory=$false)]
 		[int]$Throttle = 5
@@ -791,40 +792,30 @@ function Invoke-Parallel {
 	BEGIN { 
 		write-debug "begin"
 		$script:jobs = @()
-		$queue = New-Object System.Collections.ArrayList
 	} 
  
 	PROCESS {
-		function run_jobs() {
-			while ($queue.Count -gt 0 -and ($script:jobs | ? State -ne "Completed").Count -lt $Throttle) {
-				$job = $queue[0]
-				Write-debug "job.ScriptBlock = $($job.ScriptBlock)"
-				Write-debug "job.Object = $($job.Object)"
-				$queue.RemoveAt(0)
-				$script:jobs += Start-Job -Args $job.ScriptBlock, $job.Object, $pwd -ScriptBlock { 
-					Param($sb, $param, $pwd)
-					Set-Variable "_" $param
-					cd $pwd
-					([ScriptBlock]::Create($sb)).InvokeWithContext($null, $null, $null)
-				}
-				write-debug "jobs = $script:jobs"
-				$script:jobs | Receive-Job
-			}
-		}
+		
 		write-debug "process"
-		write-debug "InputObject type = $($InputObject.GetType())"
 		write-debug "InputObject = $InputObject"
-		$queue.Add(@{ScriptBlock = $ScriptBlock; Object = $InputObject}) | out-null
-		run_jobs
+		while (($script:jobs | ? State -ne "Completed").Count -ge $Throttle) {
+			$script:jobs | Receive-Job
+			Sleep -Milliseconds 100
+		}
+		
+		Write-debug "ScriptBlock = $($ScriptBlock)"
+		Write-debug "Object = $($InputObject)"
+		$script:jobs += Start-Job -Args $ScriptBlock, $InputObject, $pwd -ScriptBlock { 
+			Param($sb, $param, $pwd)
+			Set-Variable "_" $param
+			cd $pwd
+			([ScriptBlock]::Create($sb)).InvokeWithContext($null, $null, $null)
+		}
 		write-debug "jobs = $script:jobs"
 		
 	} 
 	END { 
 		write-debug "end"
-		while ($queue.Count -gt 0) {
-			run_jobs
-			Sleep -Milliseconds 10
-		}
         $script:jobs | Receive-Job -Wait
 		write-debug "jobs = $jobs"
 		Remove-Job $script:jobs
