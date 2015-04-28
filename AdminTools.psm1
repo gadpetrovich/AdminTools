@@ -12,5 +12,6 @@ Set-Alias ul				Update-Length
 Set-Alias Get-NetObject		Get-NetView
 Set-Alias %%				Invoke-Parallel
 Set-Alias Foreach-Parallel	Invoke-Parallel
+Set-Alias Foreach-Progress	Invoke-Progress
 
 Export-ModuleMember -Alias * -Function [a-z]* -Cmdlet *

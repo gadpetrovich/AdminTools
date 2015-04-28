@@ -29,7 +29,7 @@ function Get-NetView
 	end { }
 }
 
-function  Format-TableAuto { 
+function Format-TableAuto ([Object[]]$Property = $Null) {
 	begin {
 		$list = @()
 	}
@@ -37,9 +37,10 @@ function  Format-TableAuto {
 		$list += $_ 
 	}
 	end {
-		$list | ft -a -Wrap
+		$list | ft -Property $Property -a -Wrap
 	}
 }
+
 function New-PInvoke
 {
     <#
@@ -819,5 +820,87 @@ function Invoke-Parallel {
         $script:jobs | Receive-Job -Wait
 		write-debug "jobs = $jobs"
 		Remove-Job $script:jobs
+    } 
+}
+
+function Invoke-Progress {
+	<# 
+.SYNOPSIS 
+
+.PARAMETER Count 
+
+.PARAMETER Activity 
+
+.PARAMETER Status 
+
+.PARAMETER Id
+ 
+.PARAMETER CurrentOperation
+
+.PARAMETER ParentId
+
+.PARAMETER SecondsRemaining
+
+.PARAMETER SourceId
+
+.PARAMETER InputObject
+
+.EXAMPLE 
+   PS C:\> 1..10 | Invoke-Progress 10 "проверка" | % { sleep 1 }
+   
+   Описание
+   -----------
+   Посекундный вывод индикатора процесса.
+      
+.EXAMPLE 
+   PS C:\> ls | Invoke-Progress ((ls).count) "проверка" -CurrentOperation 'Сейчас будет выведен $($_.Name)' | % { sleep 2; $_ }
+   
+   Описание
+   -----------
+   Вывод списка файлов в текущей директории с интервалом в две секунды. в индикаторе процесса отображается номер и имя выводимого файла.
+   
+.FUNCTIONALITY  
+
+.NOTES 
+#> 
+	[cmdletbinding()] 
+	param( 
+		[Parameter(Mandatory=$true)] 
+        [Int32]$Count,
+        [Parameter(Mandatory=$true)] 
+        [String]$Activity,
+        [Parameter(Mandatory=$false)] 
+		[String]$Status = 'Обработано $Index из $Count',
+		[Parameter(Mandatory=$false)] 
+		[Int32]$Id,
+		[Parameter(Mandatory=$false)] 
+		[String]$CurrentOperation,
+		[Parameter(Mandatory=$false)] 
+		[Int32]$ParentId = -1,
+		[Parameter(Mandatory=$false)] 
+		[Int32]$SecondsRemaining = -1,
+		[Parameter(Mandatory=$false)] 
+		[Int32]$SourceId,
+        [Parameter(Mandatory=$true,ValueFromPipeline=$true)] 
+		[AllowNull()]
+        [PSObject]$InputObject
+	) 
+	BEGIN { 
+		$script:index = 0
+		$StatusBlock = [scriptblock]::Create("""" + $Status + """")
+		$CurrentBlock = [scriptblock]::Create("""" + $CurrentOperation + """")
+	} 
+ 
+	PROCESS {
+		$script:index++
+		$Index = $script:index
+		$Status = $StatusBlock.Invoke()
+		$CurrentOperation = $CurrentBlock.Invoke()
+		Write-Progress -Activity $Activity -Status $Status -Id $Id -CurrentOperation $CurrentOperation -ParentId $ParentId -SourceId $SourceId -SecondsRemaining $SecondsRemaining -PercentComplete ($script:index * 100 / $Count)
+		
+		$InputObject
+	} 
+	END { 
+		Write-Progress -Activity $Activity -Id $Id -ParentId $ParentId -SourceId $SourceId -Completed
     } 
 }
