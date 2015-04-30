@@ -29,7 +29,7 @@ function Get-NetView
 	end { }
 }
 
-function Format-TableAuto ([Object[]]$Property = $Null) {
+function Format-TableAuto ([Object[]]$Property = $Null, [Object]$GroupBy) {
 	begin {
 		$list = @()
 	}
@@ -37,7 +37,7 @@ function Format-TableAuto ([Object[]]$Property = $Null) {
 		$list += $_ 
 	}
 	end {
-		$list | ft -Property $Property -a -Wrap
+		$list | ft -Property $Property -a -Wrap -GroupBy $GroupBy
 	}
 }
 
