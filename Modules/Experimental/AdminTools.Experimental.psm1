@@ -764,62 +764,101 @@ function Join-Objects
 
 function Invoke-Parallel { 
 <# 
-.SYNOPSIS 
+ .SYNOPSIS 
+  Скрипт Invoke-Parallel выполняет обработку входных объектов в фоновых заданиях Windows PowerShell. 
+  
+  Фоновые задания выполняются взаимодействуя с текущим сеансом. Выполнение скрипта Invoke-Parallel завершается после обработки всех заданий, если не указан параметр Jobs. Предел одновременно запущенных заданий задается через параметр Throttle.
 
-.PARAMETER ScriptBlock 
+ .PARAMETER ScriptBlock 
+  Указывает блок скрипта, используемый для параллельной обработки объектов. Переменная $_ содержит объект из InputObject: { echo $_ }. 
 
-.PARAMETER InputObject 
+ .PARAMETER InputObject 
+  Указывает входной объект. Invoke-Parallel запускает блок скрипта для каждого входного объекта в отдельном фоновом задании.
 
-.PARAMETER Throttle 
+ .PARAMETER Throttle 
+  Указывает максимальное количество одновременно запущенных фоновых заданий.
 
-.PARAMETER SleepTimer 
+ .PARAMETER Jobs 
+  Ссылочная переменная для обмена данными о фоновых заданиях. Тип переменной должен быть System.Array. Если данный параметр не указан, то скрипт Invoke-Parallel завершится только после обработки всех входных объектов.
 
-.EXAMPLE 
+ .PARAMETER Wait
+  Используется для завершения оставшихся фоновых заданий. Список заданий передается через параметр Jobs.
+  
+ .EXAMPLE 
+   PS C:\> 1..5 | Foreach-Parallel { sleep (Get-Random 10); $_ }
 
-.FUNCTIONALITY  
+   Описание
+   -----------
+   На экран будут выведен список чисел от 1 до 5, порядок вывода зависит от времени завершения фоновых заданий.
 
-.NOTES 
+ .EXAMPLE 
+   PS C:\> $jobs = @(); 1..5 | Foreach-Parallel { sleep (get-random 10); $_ } -Jobs ([ref]$jobs) -Throttle 2
+   PS C:\> Foreach-Parallel -Jobs ([ref]$jobs) -Wait
+   
+   Описание
+   -----------
+   Первая команда вернет список из чисел 1 и 2 в случайном порядке. Оставшиеся числа будут возвращены второй командой.
+   
+ .FUNCTIONALITY  
+
+ .NOTES 
 #> 
-	[cmdletbinding()] 
+	[cmdletbinding(DefaultParameterSetName="Auto")]
 	param( 
-        [Parameter(Mandatory=$true)] 
+        [Parameter(Position=0, Mandatory=$true, ParameterSetName="Auto")] 
+		[Alias("Process")]
         [System.Management.Automation.ScriptBlock]$ScriptBlock,
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true)] 
+        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Auto")] 
 		[AllowNull()]
         [PSObject]$InputObject,
+		[Parameter(Position=2, Mandatory=$false, ParameterSetName="Auto")]
+		[ValidateRange(1,255)]
+		[int]$Throttle = 5,
 		[Parameter(Mandatory=$false)]
-		[int]$Throttle = 5
+		[ValidateScript({ $_.value -is [System.Array]})]
+		[ref]$Jobs,
+		[Parameter(Mandatory=$True,ParameterSetName="Wait")]
+		[switch]$Wait
 	) 
 	BEGIN { 
 		write-debug "begin"
-		$script:jobs = @()
-	} 
+		if ($Jobs) { 
+			$script:jobList = $Jobs.value 
+		} else { 
+			$script:jobList = @() 
+		}
+	}
  
 	PROCESS {
-		
+		if ($PsCmdlet.ParameterSetName -ieq "Wait") { return }
 		write-debug "process"
 		write-debug "InputObject = $InputObject"
-		while (($script:jobs | ? State -ne "Completed").Count -ge $Throttle) {
-			$script:jobs | Receive-Job
+		while (($script:jobList | ? State -ne "Completed").Count -ge $Throttle) {
+			$script:jobList | Receive-Job
 			Sleep -Milliseconds 100
 		}
 		
 		Write-debug "ScriptBlock = $($ScriptBlock)"
 		Write-debug "Object = $($InputObject)"
-		$script:jobs += Start-Job -Args $ScriptBlock, $InputObject, $pwd -ScriptBlock { 
+		$script:jobList += Start-Job -Args $ScriptBlock, $InputObject, $pwd -ScriptBlock { 
 			Param($sb, $param, $pwd)
 			Set-Variable "_" $param
 			cd $pwd
 			([ScriptBlock]::Create($sb)).InvokeWithContext($null, $null, $null)
 		}
-		write-debug "jobs = $script:jobs"
-		
+		write-debug "jobs = $script:jobList"
 	} 
 	END { 
 		write-debug "end"
-        $script:jobs | Receive-Job -Wait
-		write-debug "jobs = $jobs"
-		Remove-Job $script:jobs
+		if ($PsCmdlet.ParameterSetName -ieq "Wait" -or !$Jobs) {
+			$script:jobList | Receive-Job -Wait
+			write-debug "jobs = $script:jobList"
+			Remove-Job $script:jobList
+		} else {
+			$Jobs.value = $script:jobList 
+		} 
+		
+		
     } 
 }
 
