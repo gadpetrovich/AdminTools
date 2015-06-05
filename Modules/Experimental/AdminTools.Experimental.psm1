@@ -797,7 +797,7 @@ function Invoke-Parallel {
    
    Описание
    -----------
-   Первая команда вернет список из чисел 1 и 2 в случайном порядке. Оставшиеся числа будут возвращены второй командой.
+   Первая команда вернет неполный список из чисел в случайном порядке. Оставшиеся числа будут возвращены второй командой.
    
  .FUNCTIONALITY  
 
@@ -844,7 +844,7 @@ function Invoke-Parallel {
 			Param($sb, $param, $pwd)
 			Set-Variable "_" $param
 			cd $pwd
-			([ScriptBlock]::Create($sb)).InvokeWithContext($null, $null, $null)
+			Invoke-Command ([ScriptBlock]::Create($sb)) -InputObject $param -NoNewScope
 		}
 		write-debug "jobs = $script:jobList"
 	} 
