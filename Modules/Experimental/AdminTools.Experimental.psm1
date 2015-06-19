@@ -19,7 +19,7 @@ function Get-NetView
 			$s = $i -split "\s+", 2
 			$obj = New-Object -TypeName PSObject
 			$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $s[0].Trim("\\")
-			$obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1]
+			$obj | Add-Member -MemberType NoteProperty -Name Description -Value $s[1].Trim()
 			$obj
 		}
 	}
