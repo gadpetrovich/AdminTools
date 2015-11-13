@@ -321,6 +321,62 @@ function Get-DiskDriveInfo
 	end {}
 }
 
+<# 
+ .Synopsis
+  Выводит информацию о физическом разделе ассоциированным с логическим диском.
+
+ .Description
+  Данная функция возвращает объекты класса Win32_DiskPartition.
+  
+ .Parameter ComputerName
+  Список компьютеров. Может использоваться для перадачи объектов по конвейеру.
+ 
+ .Parameter DeviceID
+  Список имен дисков, для которых будет выведена информация.
+ 
+ .Example
+   PS C:\> Get-DiskAssociation -DeviceID c:
+
+   Описание
+   -----------
+   Эта команда возвращает информацию об ассоциированном физическом разделе диска C: на текущем компьютере. 
+ 
+ .Example
+   PS C:\> join (Get-LogicalDiskInfo) (Get-DiskDriveInfo) { (Get-DiskAssociation -DeviceID $args[0].deviceid).diskindex -eq $args[1].index } name, size, volumename deviceid, model, size | ul | fta
+
+   Описание
+   -----------
+   Эта команда возвращает информацию о физических дисках и логисеских разделах в удобном для чтения виде.
+     
+#>
+function Get-DiskAssociation
+{
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME")]
+		[string[]]$ComputerName = $env:computername,
+		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+		[string[]]$DeviceID
+	)
+	begin {}
+	process {
+		foreach ($comp in $ComputerName)
+		{
+			foreach ($dev in $DeviceID) {
+				$obj = get-wmiobject -Query "Associators of {Win32_LogicalDisk.DeviceID='$dev'} WHERE ResultRole=Antecedent" -ComputerName $comp
+				if ($obj -ne $null) {
+					$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $comp -Force
+				}
+				$obj
+			}
+		}
+	}
+	end {}
+}
+
+
 
 <# 
  .Synopsis
