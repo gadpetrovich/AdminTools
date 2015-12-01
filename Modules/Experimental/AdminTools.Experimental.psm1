@@ -9,7 +9,7 @@ function Get-NetView
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME","Name","ComputerName")]
+		[Alias("CN","__SERVER","Computer","CNAME","Name","ComputerName","Address")]
 		[string]$Match
 	)
 	begin {
@@ -25,6 +25,25 @@ function Get-NetView
 	}
 	process {
 		$objs | ? { $_.ComputerName -imatch $Match -or $_.Description -imatch $Match }
+	}
+	end { }
+}
+
+function Get-NetBrowserStat
+{
+	[cmdletbinding()]
+	param(
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("CN","__SERVER","Computer","CNAME","Name","Address")]
+		[string]$ComputerName = $env:computername
+	)
+	begin { }
+	process {
+		$nbtstat = nbtstat -a $ComputerName | Select-String "<01>"
+		$obj = New-Object -TypeName PSObject
+		$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
+		$obj | Add-Member -MemberType NoteProperty -Name MasterBrowser -Value ($nbtstat -ne $null)
+		$obj
 	}
 	end { }
 }
@@ -778,6 +797,9 @@ function Invoke-Parallel {
  .PARAMETER Throttle 
   Указывает максимальное количество одновременно запущенных фоновых заданий.
 
+ .PARAMETER ObjPerJob 
+  Указывает кол-во объектов, передаваемых в одно задание.
+  
  .PARAMETER Jobs 
   Ссылочная переменная для обмена данными о фоновых заданиях. Тип переменной должен быть System.Array. Если данный параметр не указан, то скрипт Invoke-Parallel завершится только после обработки всех входных объектов.
 
@@ -814,6 +836,9 @@ function Invoke-Parallel {
 		[Parameter(Position=2, Mandatory=$false, ParameterSetName="Auto")]
 		[ValidateRange(1,255)]
 		[int]$Throttle = 5,
+		[Parameter(Position=3, Mandatory=$false)]
+		[ValidateRange(1,255)]
+		[int]$ObjPerJob = 1,
 		[Parameter(Mandatory=$false)]
 		[ValidateScript({ $_.value -is [System.Array]})]
 		[ref]$Jobs,
@@ -826,6 +851,18 @@ function Invoke-Parallel {
 			$script:jobList = $Jobs.value 
 		} else { 
 			$script:jobList = @() 
+		}
+		$script:objList = @()
+		
+		function pushObjListToJobList() {
+			$script:jobList += Start-Job -Args $ScriptBlock, $script:objList, $pwd -ScriptBlock { 
+				Param($sb, $param, $pwd)
+				Set-Variable "_" $param
+				cd $pwd
+				Invoke-Command ([ScriptBlock]::Create($sb)) -InputObject $param -NoNewScope
+			}
+			write-debug "jobs = $script:jobList"
+			$script:objList = @()
 		}
 	}
  
@@ -840,16 +877,16 @@ function Invoke-Parallel {
 		
 		Write-debug "ScriptBlock = $($ScriptBlock)"
 		Write-debug "Object = $($InputObject)"
-		$script:jobList += Start-Job -Args $ScriptBlock, $InputObject, $pwd -ScriptBlock { 
-			Param($sb, $param, $pwd)
-			Set-Variable "_" $param
-			cd $pwd
-			Invoke-Command ([ScriptBlock]::Create($sb)) -InputObject $param -NoNewScope
+		$script:objList += $InputObject
+		Write-debug "objList = $script:objList"
+		Write-debug "objList count = $($script:objList.Count)"
+		if ($script:objList.Count -ge $ObjPerJob) {
+			pushObjListToJobList
 		}
-		write-debug "jobs = $script:jobList"
 	} 
 	END { 
 		write-debug "end"
+		pushObjListToJobList
 		if ($PsCmdlet.ParameterSetName -ieq "Wait" -or !$Jobs) {
 			$script:jobList | Receive-Job -Wait
 			write-debug "jobs = $script:jobList"
