@@ -65,7 +65,11 @@ function Get-Program
 		[switch]$ShowSystemComponents
 	)            
 
-	begin {}            
+	begin {
+		$DefaultProps = @("ComputerName", "Name", "Version", "InstalledDate")
+		$DefaultDisplay = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$DefaultProps)
+		$PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($DefaultDisplay)
+	}            
 
 	process {    
 		
@@ -143,6 +147,15 @@ function Get-Program
 			$AppDetails.Close()
 		}
 		
+		function set_standardMembers{
+			[cmdletbinding()] 
+			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
+			Process {
+				$InputObject | Add-Member MemberSet PSStandardMembers $PSStandardMembers
+				return $InputObject
+			}
+		}
+		
 		function get_applications($Computer, $UninstallRegKey) {
 			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)
 			if ($UninstallRef -eq $null) { return }
@@ -173,7 +186,7 @@ function Get-Program
 						'LocalMachine', $computer, $arch)
 					$apps = get_applications $computer $key
 					$HKLM.Close()  
-					$apps
+					$apps | set_standardMembers
 				}
 				
 				get_ie_application $Computer
