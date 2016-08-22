@@ -439,7 +439,7 @@ function Uninstall-Program
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
+				$output_data = &cmd /c "$_cmd 2>&1" | % {
 					if ([int]$_[1] -lt 32) { 
 						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
@@ -652,7 +652,7 @@ function Install-Program()
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "`"$_cmd`" 2>&1" | % {
+				$output_data = &cmd /c "$_cmd 2>&1" | % {
 					if ([int]$_[1] -lt 32) { 
 						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
