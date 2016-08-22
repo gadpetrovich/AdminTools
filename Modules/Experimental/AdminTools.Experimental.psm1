@@ -9,7 +9,7 @@ function Get-NetView
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME","Name","ComputerName","Address")]
+		[Alias("CN","__SERVER","Computer","CNAME","Name","ComputerName","Address", "HostName")]
 		[string]$Match
 	)
 	begin {
@@ -34,7 +34,7 @@ function Get-NetBrowserStat
 	[cmdletbinding()]
 	param(
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[Alias("CN","__SERVER","Computer","CNAME","Name","Address")]
+		[Alias("CN","__SERVER","Computer","CNAME","Name","Address", "HostName")]
 		[string]$ComputerName = $env:computername
 	)
 	begin { }
@@ -289,7 +289,7 @@ function Get-RegKeyLastWriteTime {
 	[parameter(
 	ValueFromPipeline=$true,
 	ValueFromPipelineByPropertyName=$true)]
-	[Alias("CN","__SERVER","Computer","CNAME")]
+	[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 	[string[]]$ComputerName=$env:ComputerName,
 	[string]$Key = "HKLM",
 	[string]$SubKey,
@@ -855,14 +855,26 @@ function Invoke-Parallel {
 		$script:objList = @()
 		
 		function pushObjListToJobList() {
+			if ($script:objList.count -eq 0) { return }
 			$script:jobList += Start-Job -Args $ScriptBlock, $script:objList, $pwd -ScriptBlock { 
 				Param($sb, $param, $pwd)
 				Set-Variable "_" $param
+				$ScriptBlock = [ScriptBlock]::Create($sb)
 				cd $pwd
-				Invoke-Command ([ScriptBlock]::Create($sb)) -InputObject $param -NoNewScope
+				Invoke-Command -ScriptBlock $ScriptBlock -InputObject $param -NoNewScope
 			}
 			write-debug "jobs = $script:jobList"
 			$script:objList = @()
+		}
+		
+		
+		function convertResult {
+			[cmdletbinding()] 
+			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
+			Process {
+				$InputObject.psobject.Properties.Remove("RunspaceId")
+				return $InputObject
+			}
 		}
 	}
  
@@ -871,7 +883,7 @@ function Invoke-Parallel {
 		write-debug "process"
 		write-debug "InputObject = $InputObject"
 		while (($script:jobList | ? State -ne "Completed").Count -ge $Throttle) {
-			$script:jobList | Receive-Job
+			$script:jobList | Receive-Job | convertResult
 			Sleep -Milliseconds 100
 		}
 		
@@ -888,7 +900,7 @@ function Invoke-Parallel {
 		write-debug "end"
 		pushObjListToJobList
 		if ($PsCmdlet.ParameterSetName -ieq "Wait" -or !$Jobs) {
-			$script:jobList | Receive-Job -Wait
+			$script:jobList | Receive-Job -Wait | convertResult
 			write-debug "jobs = $script:jobList"
 			Remove-Job $script:jobList
 		} else {

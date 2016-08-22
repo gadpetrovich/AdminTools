@@ -56,10 +56,10 @@
 function Get-Program
 {
 	param(
-		[parameter(position=0,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
+		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
 		[string]$AppMatch = "",
-		[parameter(position=1,ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
-		[Alias("CN","__SERVER","Computer","CNAME")]
+		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]            
+		[Alias("Name", "CN","__SERVER","Computer","CNAME", "HostName")]
 		[string[]]$ComputerName = $env:computername,
 		[switch]$ShowUpdates,
 		[switch]$ShowSystemComponents
@@ -190,7 +190,7 @@ function Wait-InstallProgram
 {
 	param(
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME")]
+		[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 		[string]$ComputerName = $env:computername, 
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
 		[int]$WaitSecPeriod = 7,
@@ -246,7 +246,7 @@ function Wait-WMIRestartComputer
 {
 	param(
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME")]
+		[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 		[string]$ComputerName,
 		[parameter(position=1,ValueFromPipelineByPropertyName=$true)]
 		[int]$WaitSecPeriod = 10, 
@@ -344,7 +344,7 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
    Эта команда удаляет программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Get-Program Name | Uninstall-Program -Confirm
+   PS C:\> cat computers.txt | % { [pscustomobject]@{ComputerName=$_} }| Get-Program Name | Uninstall-Program -Confirm
 
    Описание
    -----------
@@ -375,7 +375,7 @@ function Uninstall-Program
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
 		[string]$GUID,
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME")]
+		[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[Alias("EmptyDefaultParams")]
@@ -556,7 +556,7 @@ function Uninstall-Program
    Эта команда устанавливает программу "testprogram" на локальном компьютере.
    
  .Example
-   PS C:\> cat computers.txt | Install-Program Name
+   PS C:\> cat computers.txt | % { [pscustomobject]@{ComputerName=$_} } | Install-Program Name
 
    Описание
    -----------
@@ -588,7 +588,7 @@ function Install-Program()
 		[string]$ProgSource, 
 		
 		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]
-		[Alias("CN","__SERVER","Computer","CNAME")]
+		[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 		[string]$ComputerName = $env:computername, 
 		
 		[parameter(ValueFromPipelineByPropertyName=$true)]
