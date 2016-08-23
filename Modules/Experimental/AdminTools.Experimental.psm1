@@ -859,7 +859,7 @@ function Invoke-Parallel {
 			$script:jobList += Start-Job -Args $ScriptBlock, $script:objList, $pwd -ScriptBlock { 
 				Param($sb, $param, $pwd)
 				Set-Variable "_" $param
-				$ScriptBlock = [ScriptBlock]::Create($sb)
+				$ScriptBlock = [ScriptBlock]::Create("`$_ | % { " + $sb + " }")
 				cd $pwd
 				Invoke-Command -ScriptBlock $ScriptBlock -InputObject $param -NoNewScope
 			}
@@ -867,12 +867,14 @@ function Invoke-Parallel {
 			$script:objList = @()
 		}
 		
-		
 		function convertResult {
 			[cmdletbinding()] 
 			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
 			Process {
 				$InputObject.psobject.Properties.Remove("RunspaceId")
+				$InputObject.psobject.Properties.Remove("PSSourceJobInstanceId")
+				$InputObject.psobject.Properties.Remove("PSComputerName")
+				$InputObject.psobject.Properties.Remove("PSShowComputerName")
 				return $InputObject
 			}
 		}
@@ -889,7 +891,7 @@ function Invoke-Parallel {
 		
 		Write-debug "ScriptBlock = $($ScriptBlock)"
 		Write-debug "Object = $($InputObject)"
-		$script:objList += $InputObject
+		$script:objList += ,$InputObject
 		Write-debug "objList = $script:objList"
 		Write-debug "objList count = $($script:objList.Count)"
 		if ($script:objList.Count -ge $ObjPerJob) {
