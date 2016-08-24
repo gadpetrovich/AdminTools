@@ -663,7 +663,7 @@ function Join-Object
 					default { $new_name = "Join$Name$i" }
 				}
 				foreach ($hash in $hash_list) {
-					if ($hash.ContainsValue($new_name)) { continue name_index }
+					if ($hash.Values -Contains $new_name) { continue name_index }
 				}
 				return $new_name
 			}
@@ -788,8 +788,14 @@ function Invoke-Parallel {
   Указывает блок скрипта, используемый для параллельной обработки объектов. Переменная $_ содержит объект из InputObject: { echo $_ }. 
 
  .PARAMETER InputObject 
-  Указывает входной объект. Invoke-Parallel запускает блок скрипта для каждого входного объекта в отдельном фоновом задании.
+  Указывает входной объект. Invoke-Parallel запускает блок скрипта для набора входных объектов в отдельном фоновом задании. Кол-во входных объектов, обрабатываемых одним заданием, задается параметром ObjPerJob.
 
+ .PARAMETER Begin
+  Указывает блок скрипта, запускаемый перед выполнением ScriptBlock. 
+  
+ .PARAMETER End
+  Указывает блок скрипта, запускаемый после выполнения ScriptBlock. 
+  
  .PARAMETER Throttle 
   Указывает максимальное количество одновременно запущенных фоновых заданий.
 
@@ -829,11 +835,17 @@ function Invoke-Parallel {
         [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Auto")] 
 		[AllowNull()]
         [PSObject]$InputObject,
-		[Parameter(Position=2, Mandatory=$false, ParameterSetName="Auto")]
+		[Parameter(Position=2, Mandatory=$false, ParameterSetName="Auto")] 
+		[AllowNull()]
+        [System.Management.Automation.ScriptBlock]$Begin = $null,
+		[Parameter(Position=3, Mandatory=$false, ParameterSetName="Auto")] 
+		[AllowNull()]
+        [System.Management.Automation.ScriptBlock]$End = $null,
+		[Parameter(Position=4, Mandatory=$false, ParameterSetName="Auto")]
 		[ValidateRange(1,255)]
 		[int]$Throttle = 5,
-		[Parameter(Position=3, Mandatory=$false)]
-		[ValidateRange(1,255)]
+		[Parameter(Position=5, Mandatory=$false, ParameterSetName="Auto")]
+		[ValidateRange(1,16384)]
 		[int]$ObjPerJob = 1,
 		[Parameter(Mandatory=$false)]
 		[ValidateScript({ $_.value -is [System.Array]})]
@@ -852,12 +864,13 @@ function Invoke-Parallel {
 		
 		function pushObjListToJobList() {
 			if ($script:objList.count -eq 0) { return }
-			$script:jobList += Start-Job -Args $ScriptBlock, $script:objList, $pwd -ScriptBlock { 
-				Param($sb, $param, $pwd)
-				Set-Variable "_" $param
-				$ScriptBlock = [ScriptBlock]::Create("`$_ | % { " + $sb + " }")
+			$script:jobList += Start-Job -Args $ScriptBlock, $Begin, $End, $script:objList, $pwd -ScriptBlock { 
+				Param($sb, $b, $e, $param, $pwd)
+				$Process = [ScriptBlock]::Create($sb)
+				$Begin = [ScriptBlock]::Create($b)
+				$End = [ScriptBlock]::Create($e)
 				Set-Location $pwd
-				Invoke-Command -ScriptBlock $ScriptBlock -InputObject $param -NoNewScope
+				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
 			}
 			write-debug "jobs = $script:jobList"
 			$script:objList = @()

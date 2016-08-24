@@ -35,4 +35,9 @@ Describe "Invoke-Parallel" {
 		$result2.count | Should BeLessThan 4
 		$result1 + $result2 | sort | Should Be (1..5)
 	}
+	
+	It "проверка Begin и End" {
+		$result = 1..10 | Foreach-Parallel -Begin { $a = 0 } -process { $a += $_ } -end { $a } -ObjPerJob 4
+		$result | Should Be (1 + 2 + 3 + 4), (5 + 6 + 7 + 8), (9 + 10)
+	}
 }

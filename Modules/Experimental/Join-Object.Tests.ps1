@@ -95,4 +95,11 @@ Describe "Join-Object" {
 		$res.JoinLastAccessTime | Should Be $b[0].LastAccessTime
 		$res.JoinCreationTime | Should Be $b[0].CreationTime
     }
+	
+	It "свойства с одинаковыми именами, но в разном регистре" {
+		$test1 = [pscustomobject]@{a=1;b=2}
+		$test2 = [pscustomobject]@{a=1;B=3}
+		$res = Join-Object -LeftObject $test1 -RightObject $test2 -LeftProperty * -RightProperty *
+		([Array]$res.PSObject.Properties).Count | Should Be 4
+	}
 }
