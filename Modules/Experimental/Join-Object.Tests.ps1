@@ -4,7 +4,7 @@
 #import-module "$here\$sut"
 remove-module AdminTools -ErrorAction SilentlyContinue; import-module AdminTools
 
-Describe "Invoke-Parallel" {
+Describe "Join-Object" {
 	
 	mkdir TestDrive:\1 -Force | Out-Null
 	mkdir TestDrive:\2 -Force | Out-Null
