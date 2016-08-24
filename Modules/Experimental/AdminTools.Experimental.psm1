@@ -1,7 +1,7 @@
 ﻿
 
 # $null | Skip-Null | % { ... } 
-filter Skip-Null { $_|?{ $_ -ne $null } }
+filter Skip-Null { $_ | Where-Object { $_ -ne $null } }
 
 
 function Get-NetView
@@ -14,7 +14,7 @@ function Get-NetView
 	)
 	begin {
 		$strs = net view 
-		$strs = $strs | select -skip 3 -first ($strs.length-5)
+		$strs = $strs | select-object -skip 3 -first ($strs.length-5)
 		$objs = foreach ($i in $strs) {
 			$s = $i -split "\s+", 2
 			$obj = New-Object -TypeName PSObject
@@ -24,7 +24,7 @@ function Get-NetView
 		}
 	}
 	process {
-		$objs | ? { $_.ComputerName -imatch $Match -or $_.Description -imatch $Match }
+		$objs | Where-Object { $_.ComputerName -imatch $Match -or $_.Description -imatch $Match }
 	}
 	end { }
 }
@@ -42,7 +42,7 @@ function Get-NetBrowserStat
 		$nbtstat = nbtstat -a $ComputerName | Select-String "<01>"
 		$obj = New-Object -TypeName PSObject
 		$obj | Add-Member -MemberType NoteProperty -Name ComputerName -Value $ComputerName
-		$obj | Add-Member -MemberType NoteProperty -Name MasterBrowser -Value ($nbtstat -ne $null)
+		$obj | Add-Member -MemberType NoteProperty -Name MasterBrowser -Value ($null -ne $nbtstat)
 		$obj
 	}
 	end { }
@@ -56,7 +56,7 @@ function Format-TableAuto ([Object[]]$Property = $Null, [Object]$GroupBy) {
 		$list += $_ 
 	}
 	end {
-		$list | ft -Property $Property -a -Wrap -GroupBy $GroupBy
+		$list | Format-Table -Property $Property -a -Wrap -GroupBy $GroupBy
 	}
 }
 
@@ -115,7 +115,7 @@ Generates a function for FlashWindow which ignores the boolean return value, and
 		
 		if (-not $OutputText) {
 			$type = Add-Type -PassThru -Name "PInvoke$(Get-Random)" -MemberDefinition $MemberDefinition
-			iex "New-Item Function:Global:$name -Value { [$($type.FullName)]::$name.Invoke( `$args ) }"
+			Invoke-Expression "New-Item Function:Global:$name -Value { [$($type.FullName)]::$name.Invoke( `$args ) }"
 		} else {
 			$MemberDefinition
 		}
@@ -127,7 +127,7 @@ New-PInvoke user32 "void FlashWindow(IntPtr hwnd, bool bInvert)"
 
 function Assert-PSWindow ()
 {
-	FlashWindow (ps -id $pid).MainWindowHandle $true
+	FlashWindow (Get-Process -id $pid).MainWindowHandle $true
 }
 
 #http://xaegr.wordpress.com/2007/01/24/decoder/
@@ -159,8 +159,8 @@ function Get-Property ()
 		$InputObject
 	)
 	Process {
-		$InputObject | Select $Property | Get-Member -MemberType *Property | % {
-			$obj = "" | select Name, Value
+		$InputObject | Select-Object $Property | Get-Member -MemberType *Property | ForeEach-Object {
+			$obj = "" | Select-Object Name, Value
 			$obj.Name = $_.Name
 			$obj.Value = $InputObject.($_.Name)
 			$obj 
@@ -176,7 +176,7 @@ function ConvertTo-HashTable
 		[PSObject]$InputObject
 	)
 	Process {
-		$InputObject.psobject.properties | foreach -begin {$h=@{}} -process {$h."$($_.Name)" = $_.Value} -end {$h}
+		$InputObject.psobject.properties | foreach-Object -begin {$h=@{}} -process {$h."$($_.Name)" = $_.Value} -end {$h}
 	}
 }
 
@@ -194,7 +194,7 @@ function Start-ProgressSleep
 		for ($i = $Seconds; $i -ge 0; $i--) { 
 			Write-Progress -Activity $Activity -Status "Осталось секунд: $i" -PercentComplete `
 				(($Seconds - $i) / ($Seconds) * 100);
-			sleep 1 
+			start-sleep 1 
 		}; 
 		Write-Progress  -Activity $Activity -Status "Выход" -Completed
 	}
@@ -213,7 +213,7 @@ function Select-Choice {
 	)
 	$list = @()
 	for ($i = 0; $i -lt $Choices.Length; $i++) {
-		if ($ChoiceDescriptions -eq $null -or $ChoiceDescriptions.Lenght -ne $Choices) {
+		if ($null -eq $ChoiceDescriptions -or $ChoiceDescriptions.Lenght -ne $Choices) {
 			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i]
 		} else {
 			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i], $ChoiceDescriptions[$i]
@@ -308,9 +308,7 @@ function Get-RegKeyLastWriteTime {
 			HKCR, HKCU, HKLM, HKU, HKCC"}
 		}
 
-		$KEYQUERYVALUE = 0x1
 		$KEYREAD = 0x19
-		$KEYALLACCESS = 0x3F
 	}
 	PROCESS {
 		foreach($computer in $ComputerName) {
@@ -382,8 +380,6 @@ public static extern int RegCloseKey(
 
 		$hKey = new-object int
 		$hKeyref = new-object int
-		$searchKeyRemote = $type0::RegConnectRegistry($computer, $searchKey, `
-		[ref]$hKey)
 		$result = $type1::RegOpenKeyEx($hKey, $SubKey, 0, $KEYREAD, `
 		[ref]$hKeyref)
 
@@ -393,7 +389,7 @@ public static extern int RegCloseKey(
 			$result = $type4::RegQueryInfoKey($hKeyref, $null, [ref]$null, 0, [ref]$null, [ref]$null, `
 				[ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$time)
 			#create output object
-			$o = "" | Select Key, LastWriteTime, ComputerName
+			$o = "" | Select-Object Key, LastWriteTime, ComputerName
 			$o.ComputerName = "$computer" 
 			$o.Key = "$Key\$SubKey"
 			# TODO Change to use the time api
@@ -411,7 +407,7 @@ public static extern int RegCloseKey(
 				$builder, [ref] $length, $null, $null, $null, [ref] $time) )
 			{
 				#create output object
-				$o = "" | Select Key, LastWriteTime, ComputerName
+				$o = "" | Select-Object Key, LastWriteTime, ComputerName
 				$o.ComputerName = "$computer" 
 				$o.Key = $builder.ToString()
 				# TODO Change to use the time api
@@ -636,8 +632,8 @@ function Join-Object
 		
 		function add($out, $source, $properties, $prop_hash)
 		{			
-			if($properties -or $source -eq $null) {
-				add_properties $out ($source | select $properties -ErrorAction SilentlyContinue) $prop_hash
+			if($properties -or $null -eq $source) {
+				add_properties $out ($source | select-object $properties -ErrorAction SilentlyContinue) $prop_hash
 			} else {
 				add_value $out $source $prop_hash
 			}		
@@ -675,14 +671,14 @@ function Join-Object
 
 		function init_hashtables() {
 			if ($LeftProperty) {
-				foreach($ip in ($LeftObject[0] | select $LeftProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
+				foreach($ip in ($LeftObject[0] | select-object $LeftProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
 					$left_properties[$ip.Name] = $ip.Name
 				}
 			} else {
 				$left_properties["Value"] = "Value"
 			}
 			if ($RightProperty) {
-				foreach($ip in ($RightObject[0] | select $RightProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
+				foreach($ip in ($RightObject[0] | select-object $RightProperty -ErrorAction SilentlyContinue) | Get-Member -MemberType *Property) {
 					$right_properties[$ip.Name] = get_new_name $ip.Name @($left_properties, $right_properties)
 				}
 			} else {
@@ -773,7 +769,7 @@ function Join-Objects
 			}
 			$res
 		}
-		$res = Join-Object $objects[0] $objects[1] $script ($JoinProperties + $Properties[0]) $Properties[1] -Type $Type
+		$res = Join-Object -LeftObject $objects[0] -RightObject $objects[1] -FilterScript $script -LeftProperty ($JoinProperties + $Properties[0]) -RightProperty $Properties[1] -Type $Type
 		for ($i = 2; $i -lt $Objects.Count; $i++) {
 			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $Properties[$i] -Type $Type
 		}
@@ -860,7 +856,7 @@ function Invoke-Parallel {
 				Param($sb, $param, $pwd)
 				Set-Variable "_" $param
 				$ScriptBlock = [ScriptBlock]::Create("`$_ | % { " + $sb + " }")
-				cd $pwd
+				Set-Location $pwd
 				Invoke-Command -ScriptBlock $ScriptBlock -InputObject $param -NoNewScope
 			}
 			write-debug "jobs = $script:jobList"
@@ -884,9 +880,9 @@ function Invoke-Parallel {
 		if ($PsCmdlet.ParameterSetName -ieq "Wait") { return }
 		write-debug "process"
 		write-debug "InputObject = $InputObject"
-		while (($script:jobList | ? State -ne "Completed").Count -ge $Throttle) {
+		while (($script:jobList | Where-Object State -ne "Completed").Count -ge $Throttle) {
 			$script:jobList | Receive-Job | convertResult
-			Sleep -Milliseconds 100
+			Start-Sleep -Milliseconds 100
 		}
 		
 		Write-debug "ScriptBlock = $($ScriptBlock)"

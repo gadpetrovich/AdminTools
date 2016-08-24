@@ -91,7 +91,7 @@ function Get-Program
 		}
 		
 		function get_app_object($Computer) {
-			$OutputObj = "" | select ComputerName, Name, Version, Vendor, InstalledDate, `
+			$OutputObj = "" | Select-Object ComputerName, Name, Version, Vendor, InstalledDate, `
 				InstallLocation, UninstallKey, QuietUninstallKey, GUID
 			$OutputObj.ComputerName = $Computer.ToUpper()
 			return $OutputObj
@@ -113,7 +113,7 @@ function Get-Program
 			}
 			$key.Close()
 			$HKLM.Close()
-			if ($OutputObj.Version -ne $null) {
+			if ($null -ne $OutputObj.Version) {
 				$OutputObj
 			}
 			Write-Debug ("Компьютер $Computer, internet explorer версии " + $OutputObj.Version)
@@ -158,7 +158,7 @@ function Get-Program
 		
 		function get_applications($Computer, $UninstallRegKey) {
 			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)
-			if ($UninstallRef -eq $null) { return }
+			if ($null -eq $UninstallRef) { return }
 			$Applications = $UninstallRef.GetSubKeyNames()
 			$UninstallRef.Close()
 			foreach ($App in $Applications) {
@@ -214,13 +214,13 @@ function Wait-InstallProgram
 		$before = Get-Date
 		Write-Verbose "Запуск ожидания установки/удаления программы, время: $before"
 		$msiserver = Get-Service -ComputerName $ComputerName -Name msiserver
-		if ($msiserver.Status -ne "Running") { $msiserver.Start(); sleep 2 }
+		if ($msiserver.Status -ne "Running") { $msiserver.Start(); Start-Sleep 2 }
 		while ( $true )
 		{ 
-			Sleep $WaitSecPeriod
+			Start-Sleep $WaitSecPeriod
 			if (-not (
-				@(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
-				(Get-ProcessInfo $ComputerName | ? { $_.Name -imatch "(nsis|uninst|wusa|setup)" }) 
+				@(Get-ProcessInfo $ComputerName | Where-Object { $_.Name -imatch "msiexec" }).Count -gt 1 -or 
+				(Get-ProcessInfo $ComputerName | Where-Object { $_.Name -imatch "(nsis|uninst|wusa|setup)" }) 
 			)) {
 				break
 			}
@@ -282,7 +282,7 @@ function Wait-WMIRestartComputer
 				if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
 					throw "Истекло время ожидания на остановку WMI"
 				}
-				Sleep $WaitSecPeriod
+				Start-Sleep $WaitSecPeriod
 			}
 		}
 		$before = Get-Date
@@ -297,7 +297,7 @@ function Wait-WMIRestartComputer
 			if ( ((Get-Date)-$before).TotalSeconds -gt $SecTimeout ) {
 				throw "Истекло время ожидания на запуск WMI"
 			}
-			Sleep $WaitSecPeriod
+			Start-Sleep $WaitSecPeriod
 		}
 		Write-Verbose "Перезагрузка завершена: $(Get-Date)"
 	} catch {
@@ -404,7 +404,7 @@ function Uninstall-Program
 			$_cmd = ""
 			if ($Interactive) { $_cmd += "-i " }
 			
-			if ($app.QuietUninstallKey -ne $null) {
+			if ($null -ne $app.QuietUninstallKey) {
 				$_cmd += $app.QuietUninstallKey
 			} elseif ($uninstall_key -match "msiexec" -or [string]::IsNullOrEmpty($uninstall_key)) {
 				$uninstall_guid = [regex]::match($uninstall_key, "\w{8}-\w{4}-\w{4}-\w{4}-\w{12}")
@@ -439,7 +439,7 @@ function Uninstall-Program
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "$_cmd 2>&1" | % {
+				$output_data = &cmd /c "$_cmd 2>&1" | ForEach-Object {
 					if ([int]$_[1] -lt 32) { 
 						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
@@ -465,8 +465,8 @@ function Uninstall-Program
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
-			$app = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates | ? { $_.GUID -eq $GUID }
-			if ($app -eq $null) {
+			$app = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates | Where-Object { $_.GUID -eq $GUID }
+			if ($null -eq $app) {
 				throw "Приложения с GUID = $GUID нет в системе"
 			}
 			
@@ -499,12 +499,12 @@ function Uninstall-Program
 			Write-Error $_
 		} finally {
 			if ($PassThru) {
-				$OutputObj = "" | Select ComputerName, GUID, Name, ReturnValue, Text, EventMessage, StartTime, EndTime
+				$OutputObj = "" | Select-Object ComputerName, GUID, Name, ReturnValue, Text, EventMessage, StartTime, EndTime
 				$OutputObj.ComputerName = $ComputerName
 				$OutputObj.GUID = $GUID
 				$OutputObj.Name = $app_name
 				$OutputObj.ReturnValue = $return_value
-				if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+				if ($null -ne $output_data -and $output_data.Count -gt 0) { 
 					$OutputObj.Text = $output_data[$output_data.Count-1]
 				}
 				$OutputObj.EventMessage = $event_message
@@ -652,7 +652,7 @@ function Install-Program()
 			$_cmd = Get-RemoteCmd $ComputerName (get_cmd)
 			Write-Verbose $_cmd
 			try {
-				$output_data = &cmd /c "$_cmd 2>&1" | % {
+				$output_data = &cmd /c "$_cmd 2>&1" | ForEach-Object {
 					if ([int]$_[1] -lt 32) { 
 						$_ | ConvertTo-Encoding -From utf-16 -To cp866
 					} else {
@@ -697,10 +697,10 @@ function Install-Program()
 			if ($PassThru) {
 				Write-Verbose "Получаем список программ"
 				$after_install_state = Get-Program -ComputerName $ComputerName -ShowSystemComponents -ShowUpdates
-				if ($before_install_state -eq $null) {
+				if ($null -eq $before_install_state) {
 					$diff = @($after_install_state)
 				} else {
-					$diff = @(diff $before_install_state $after_install_state -Property Name, Version, Vendor, GUID | ? { $_.SideIndicator -eq "=>" } )
+					$diff = @(Compare-Object $before_install_state $after_install_state -Property Name, Version, Vendor, GUID | Where-Object { $_.SideIndicator -eq "=>" } )
 				}
 				Write-Verbose "Получаем список событий, связанных с установкой"
 				$events = @(Get-EventLog -computername $ComputerName -LogName Application -Source MsiInstaller -After $before_install_date -ErrorAction SilentlyContinue)
@@ -715,12 +715,12 @@ function Install-Program()
 			if ($PassThru) {
 				if ($diff) {
 					foreach( $i in $diff) {
-						$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, Name, Version, Vendor, GUID, StartTime, EndTime
+						$OutputObj = "" | Select-Object ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, Name, Version, Vendor, GUID, StartTime, EndTime
 						$OutputObj.ComputerName = $ComputerName
 						$OutputObj.ProgSource = $ProgSource
 						$OutputObj.ReturnValue = $exit_code
 						$OutputObj.EventMessage = $event_message
-						if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+						if ($null -ne $output_data -and $output_data.Count -gt 0) { 
 							$OutputObj.OutputData = $output_data[$output_data.Count-1]
 						}
 						$OutputObj.Name = $i.Name
@@ -732,12 +732,12 @@ function Install-Program()
 						$OutputObj
 					}
 				} else {
-					$OutputObj = "" | select ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
+					$OutputObj = "" | Select-Object ComputerName, ProgSource, ReturnValue, EventMessage, OutputData, StartTime, EndTime
 					$OutputObj.ComputerName = $ComputerName
 					$OutputObj.ProgSource = $ProgSource
 					$OutputObj.ReturnValue = $exit_code
 					$OutputObj.EventMessage = $event_message
-					if ($output_data -ne $null -and $output_data.Count -gt 0) { 
+					if ($null -ne $output_data -and $output_data.Count -gt 0) { 
 						$OutputObj.OutputData = $output_data[$output_data.Count-1]
 					}
 					$OutputObj.StartTime = $before_install_date.ToString()
