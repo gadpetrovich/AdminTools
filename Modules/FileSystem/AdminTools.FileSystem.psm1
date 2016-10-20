@@ -1,15 +1,16 @@
 ﻿
 function ConvertTo-HumanReadable($num)
 		{
-			switch ($num) {
-				{$num -lt 1000} {"{0,4:N0}  B" -f ($num);break }
-				{$num -lt 10KB} {"{0,4:N1} KB" -f ($num / 1KB);break }
-				{$num -lt 1000KB} {"{0,4:N0} KB" -f ($num / 1KB);break }
-				{$num -lt 10MB} {"{0,4:N1} MB" -f ($num / 1MB);break }
-				{$num -lt 1000MB} {"{0,4:N0} MB" -f ($num / 1MB);break }
-				{$num -lt 10GB} {"{0,4:N1} GB" -f ($num / 1GB);break }
-				{$num -lt 1000GB} {"{0,4:N0} GB" -f ($num / 1GB);break }
-				{$num -lt 10TB} {"{0,4:N1} TB" -f ($num / 1TB);break }
+			$absNum = [Math]::Abs($num)
+			switch ($absNum) {
+				{$absNum -lt 1000} {"{0,4:N0}  B" -f ($num);break }
+				{$absNum -lt 10KB} {"{0,4:N1} KB" -f ($num / 1KB);break }
+				{$absNum -lt 1000KB} {"{0,4:N0} KB" -f ($num / 1KB);break }
+				{$absNum -lt 10MB} {"{0,4:N1} MB" -f ($num / 1MB);break }
+				{$absNum -lt 1000MB} {"{0,4:N0} MB" -f ($num / 1MB);break }
+				{$absNum -lt 10GB} {"{0,4:N1} GB" -f ($num / 1GB);break }
+				{$absNum -lt 1000GB} {"{0,4:N0} GB" -f ($num / 1GB);break }
+				{$absNum -lt 10TB} {"{0,4:N1} TB" -f ($num / 1TB);break }
 				default {"{0,4:N0} TB" -f ($num / 1TB) }
 			}
 		}
@@ -315,7 +316,7 @@ function Update-Length
 		if ($InputObject -Is [PSObject]) {
 			foreach($i in $InputObject) {     
 				foreach($p in $NumericProperty) { 
-					addProperty $i ($i | select $p)
+					addProperty $i ($i | Select-Object $p)
 				}
 				$i
 			}

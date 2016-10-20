@@ -34,7 +34,7 @@ function Add-UserToAdmin
 			$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 			# local admin group
 			$admgrp_name = $col_groups.Name
-			$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
+			$domain_name = (Get-WmiObject Win32_computersystem -ComputerName $ComputerName).domain
 			$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 			
 			if(-not (check_user_into_admin_group $UserName $group)) {
@@ -72,7 +72,7 @@ function Remove-UserFromAdmin
 			$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 			# local admin group
 			$admgrp_name = $col_groups.Name
-			$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
+			$domain_name = (Get-WmiObject Win32_computersystem -ComputerName $ComputerName).domain
 			$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 			
 			if(check_user_into_admin_group $UserName $group) {
@@ -99,7 +99,7 @@ function Get-AdminUsers
 		$col_groups = Get-WmiObject -ComputerName $ComputerName -Query "Select * from Win32_Group Where LocalAccount=True AND SID='S-1-5-32-544'"
 		# local admin group
 		$admgrp_name = $col_groups.Name
-		$domain_name = (gwmi Win32_computersystem -ComputerName $ComputerName).domain
+		$domain_name = (Get-WmiObject Win32_computersystem -ComputerName $ComputerName).domain
 		$group = [ADSI]("WinNT://$ComputerName/$admgrp_name")
 		$group_members = @($group.psbase.Invoke("Members"))
 		
@@ -107,9 +107,9 @@ function Get-AdminUsers
 			$m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
 			$d = $member.gettype().InvokeMember("Parent", "GetProperty", $null, $member, $null)
 			
-			$output = "" | Select ComputerName, Domain, UserName
+			$output = "" | Select-Object ComputerName, Domain, UserName
 			$output.ComputerName = $ComputerName
-			if ($d -ne "WinNT:") { $output.Domain = ($d -split "/") | select -last 1 }
+			if ($d -ne "WinNT:") { $output.Domain = ($d -split "/") | Select-Object -last 1 }
 			$output.UserName = $m
 			$output
 		}
