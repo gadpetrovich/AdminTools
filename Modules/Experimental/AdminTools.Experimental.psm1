@@ -871,6 +871,7 @@ function Invoke-Parallel {
 				$End = [ScriptBlock]::Create($e)
 				Set-Location $pwd
 				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
+				#todo: сохранить информацию о скрытии параметров (get-process после %% выдает все параметры)
 			}
 			write-debug "jobs = $script:jobList"
 			$script:objList = @()

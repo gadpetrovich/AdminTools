@@ -3,7 +3,7 @@ function check_user_into_admin_group([string]$UserName, [ADSI]$group)
 {
 	$group_members = @($group.psbase.Invoke("Members"))
 	foreach ($member in $group_members) {
-		$m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
+		$m = ([ADSI]$member).InvokeGet("Name")
 		if ($UserName -ieq $m) { return $true }
 	}
 	return $false
@@ -104,9 +104,9 @@ function Get-AdminUsers
 		$group_members = @($group.psbase.Invoke("Members"))
 		
 		foreach ($member in $group_members) {
-			$m = $member.GetType().InvokeMember("Name", "GetProperty", $null, $member, $null)
-			$d = $member.gettype().InvokeMember("Parent", "GetProperty", $null, $member, $null)
-			
+			$m = ([ADSI]$member).InvokeGet("Name")
+			$d = ([ADSI]$member).InvokeGet("Parent")
+		
 			$output = "" | Select-Object ComputerName, Domain, UserName
 			$output.ComputerName = $ComputerName
 			if ($d -ne "WinNT:") { $output.Domain = ($d -split "/") | Select-Object -last 1 }
