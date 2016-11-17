@@ -927,8 +927,6 @@ function Invoke-Progress {
 	<# 
 .SYNOPSIS 
 
-.PARAMETER Count 
-
 .PARAMETER Activity 
 
 .PARAMETER Status 
@@ -946,14 +944,14 @@ function Invoke-Progress {
 .PARAMETER InputObject
 
 .EXAMPLE 
-   PS C:\> 1..10 | Invoke-Progress 10 "проверка" | % { sleep 1 }
+   PS C:\> 1..10 | Invoke-Progress "проверка" | % { sleep 1 }
    
    Описание
    -----------
    Посекундный вывод индикатора процесса.
       
 .EXAMPLE 
-   PS C:\> ls | Invoke-Progress ((ls).count) "проверка" -CurrentOperation 'Сейчас будет выведен $($_.Name)' | % { sleep 2; $_ }
+   PS C:\> ls | Invoke-Progress "проверка" -CurrentOperation 'Сейчас будет выведен $($_.Name)' | % { sleep 2; $_ }
    
    Описание
    -----------
@@ -964,17 +962,15 @@ function Invoke-Progress {
 .NOTES 
 #> 
 	[cmdletbinding()] 
-	param( 
-		[Parameter(Mandatory=$true)] 
-        [Int32]$Count,
+	param(
         [Parameter(Mandatory=$true)] 
         [String]$Activity,
         [Parameter(Mandatory=$false)] 
-		[String]$Status = 'Обработано $Index из $Count',
+		[String]$Status = $null,
 		[Parameter(Mandatory=$false)] 
 		[Int32]$Id,
 		[Parameter(Mandatory=$false)] 
-		[String]$CurrentOperation,
+		[String]$CurrentOperation = '',
 		[Parameter(Mandatory=$false)] 
 		[Int32]$ParentId = -1,
 		[Parameter(Mandatory=$false)] 
@@ -985,22 +981,20 @@ function Invoke-Progress {
 		[AllowNull()]
         [PSObject]$InputObject
 	) 
-	BEGIN { 
-		$script:index = 0
-		$StatusBlock = [scriptblock]::Create("""" + $Status + """")
-		$CurrentBlock = [scriptblock]::Create("""" + $CurrentOperation + """")
-	} 
- 
-	PROCESS {
-		$script:index++
-		$Index = $script:index
+	$alldata = @($Input)
+	if ([string]::IsNullOrEmpty($Status)) { $Status = 'Обработано $Index из $($alldata.count)' }
+
+	$index = 0
+	$StatusBlock = [scriptblock]::Create("""" + $Status + """")
+	$CurrentBlock = [scriptblock]::Create("""" + $CurrentOperation + """")
+	$alldata | % {
+		$index++
 		$Status = $StatusBlock.Invoke()
 		$CurrentOperation = $CurrentBlock.Invoke()
-		Write-Progress -Activity $Activity -Status $Status -Id $Id -CurrentOperation $CurrentOperation -ParentId $ParentId -SourceId $SourceId -SecondsRemaining $SecondsRemaining -PercentComplete ($script:index * 100 / $Count)
+		Write-Progress -Activity $Activity -Status $Status -Id $Id -CurrentOperation $CurrentOperation -ParentId $ParentId -SourceId $SourceId -SecondsRemaining $SecondsRemaining -PercentComplete ($index * 100 / $alldata.Count)
 		
-		$InputObject
+		$_
 	} 
-	END { 
-		Write-Progress -Activity $Activity -Id $Id -ParentId $ParentId -SourceId $SourceId -Completed
-    } 
+	
+	Write-Progress -Activity $Activity -Id $Id -ParentId $ParentId -SourceId $SourceId -Completed
 }
