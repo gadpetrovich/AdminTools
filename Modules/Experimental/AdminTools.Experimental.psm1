@@ -873,14 +873,19 @@ function Invoke-Parallel {
 				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
 				#todo: сохранить информацию о скрытии параметров (get-process после %% выдает все параметры)
 			}
-			write-debug "jobs = $script:jobList"
+			write-debug "jobs = $($script:jobList | % { $_.state })"
 			$script:objList = @()
 		}
 		
 		function convertResult {
 			[cmdletbinding()] 
-			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
+			param ([
+				Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+				[AllowNull()]
+				[PSObject]$InputObject
+			) 
 			Process {
+				if ($InputObject -eq $null) { return $null }
 				$InputObject.psobject.Properties.Remove("RunspaceId")
 				$InputObject.psobject.Properties.Remove("PSSourceJobInstanceId")
 				$InputObject.psobject.Properties.Remove("PSComputerName")
@@ -894,6 +899,8 @@ function Invoke-Parallel {
 		if ($PsCmdlet.ParameterSetName -ieq "Wait") { return }
 		write-debug "process"
 		write-debug "InputObject = $InputObject"
+		write-debug "Uncompleted jobs = $(($script:jobList | Where-Object State -ne "Completed").Count)"
+		$script:jobList | Receive-Job | convertResult
 		while (($script:jobList | Where-Object State -ne "Completed").Count -ge $Throttle) {
 			$script:jobList | Receive-Job | convertResult
 			Start-Sleep -Milliseconds 100
