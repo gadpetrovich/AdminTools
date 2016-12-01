@@ -213,7 +213,7 @@ function Select-Choice {
 	)
 	$list = @()
 	for ($i = 0; $i -lt $Choices.Length; $i++) {
-		if ($null -eq $ChoiceDescriptions -or $ChoiceDescriptions.Lenght -ne $Choices) {
+		if ($null -eq $ChoiceDescriptions -or $ChoiceDescriptions.Length -ne $Choices.Length) {
 			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i]
 		} else {
 			$list += New-Object System.Management.Automation.Host.ChoiceDescription $Choices[$i], $ChoiceDescriptions[$i]
