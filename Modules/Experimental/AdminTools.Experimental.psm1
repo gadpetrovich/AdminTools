@@ -159,7 +159,7 @@ function Get-Property ()
 		$InputObject
 	)
 	Process {
-		$InputObject | Select-Object $Property | Get-Member -MemberType *Property | ForeEach-Object {
+		$InputObject | Select-Object $Property | Get-Member -MemberType *Property | ForEach-Object {
 			$obj = "" | Select-Object Name, Value
 			$obj.Name = $_.Name
 			$obj.Value = $InputObject.($_.Name)
