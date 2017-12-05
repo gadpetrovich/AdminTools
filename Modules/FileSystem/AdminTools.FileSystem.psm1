@@ -1,20 +1,31 @@
 ﻿
-function ConvertTo-HumanReadable($num)
-		{
-			$absNum = [Math]::Abs($num)
-			switch ($absNum) {
-				{$absNum -lt 1000} {"{0,4:N0}  B" -f ($num);break }
-				{$absNum -lt 10KB} {"{0,4:N1} KB" -f ($num / 1KB);break }
-				{$absNum -lt 1000KB} {"{0,4:N0} KB" -f ($num / 1KB);break }
-				{$absNum -lt 10MB} {"{0,4:N1} MB" -f ($num / 1MB);break }
-				{$absNum -lt 1000MB} {"{0,4:N0} MB" -f ($num / 1MB);break }
-				{$absNum -lt 10GB} {"{0,4:N1} GB" -f ($num / 1GB);break }
-				{$absNum -lt 1000GB} {"{0,4:N0} GB" -f ($num / 1GB);break }
-				{$absNum -lt 10TB} {"{0,4:N1} TB" -f ($num / 1TB);break }
-				default {"{0,4:N0} TB" -f ($num / 1TB) }
-			}
+function ConvertTo-HumanReadable
+{	
+	[cmdletbinding()]            
+	param(            
+		[parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]            
+		$num
+	)  
+	
+	begin{}
+	process {
+		
+		$absNum = [Math]::Abs($num)
+		switch ($absNum) {
+			{$absNum -lt 1000} {"{0,4:N0}  B" -f ($num);break }
+			{$absNum -lt 10KB} {"{0,4:N1} KB" -f ($num / 1KB);break }
+			{$absNum -lt 1000KB} {"{0,4:N0} KB" -f ($num / 1KB);break }
+			{$absNum -lt 10MB} {"{0,4:N1} MB" -f ($num / 1MB);break }
+			{$absNum -lt 1000MB} {"{0,4:N0} MB" -f ($num / 1MB);break }
+			{$absNum -lt 10GB} {"{0,4:N1} GB" -f ($num / 1GB);break }
+			{$absNum -lt 1000GB} {"{0,4:N0} GB" -f ($num / 1GB);break }
+			{$absNum -lt 10TB} {"{0,4:N1} TB" -f ($num / 1TB);break }
+			default {"{0,4:N0} TB" -f ($num / 1TB) }
 		}
-
+	
+	}
+	end{}
+}
 # аналог юникосовой программы du
 # ниже расположен рекурсивный аналог данной функции
 # здесь же пришлось развернуть рекурсию для вывода данных прямо во время сканирования папки
@@ -198,20 +209,25 @@ function Get-DiskUsageRecursive(
    # Вывести 'топ 10' самых толстых папок в 'C:\Program Files'.
    Get-DiskUsage 'C:\Program Files' -ShowProgress -ShowLevel | ? {$_.Level -eq 1} | sort Length -Descending | select FullName, Length -First 10 | Update-Length | ft -AutoSize
 #>
-function Get-DiskUsage(
-	[string]$LiteralPath = ".", 
-	[int]$Depth = [int]::MaxValue, 
-	[switch]$ShowLevel, 
-	[switch]$ShowProgress,
-	[switch]$RecursiveAlgorithm
-)
+function Get-DiskUsage
 {
-	if($RecursiveAlgorithm) {
-		Get-DiskUsageRecursive -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
-	} else {
-		Get-DiskUsageLinear -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+	[cmdletbinding()]
+	param(
+		[string]$LiteralPath = ".", 
+		[int]$Depth = [int]::MaxValue, 
+		[switch]$ShowLevel, 
+		[switch]$ShowProgress,
+		[switch]$RecursiveAlgorithm
+	)
+	begin {}
+	process {
+		if($RecursiveAlgorithm) {
+			Get-DiskUsageRecursive -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+		} else {
+			Get-DiskUsageLinear -LiteralPath $LiteralPath -Depth $Depth -ShowLevel:$ShowLevel -ShowProgress:$ShowProgress
+		}
 	}
-	
+	end {}
 }
 
 <# 
