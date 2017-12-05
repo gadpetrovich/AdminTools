@@ -1021,3 +1021,10 @@ function Invoke-Progress {
 	
 	Write-Progress -Activity $Activity -Id $Id -ParentId $ParentId -SourceId $SourceId -Completed
 }
+
+function Set-ActualBufferSize() 
+{
+	$newsize = $host.ui.rawui.BufferSize
+	$newsize.Width = $host.ui.rawui.WindowSize.Width
+	$host.ui.rawui.BufferSize = $newsize
+}
