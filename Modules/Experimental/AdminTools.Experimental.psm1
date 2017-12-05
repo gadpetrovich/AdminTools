@@ -784,23 +784,26 @@ function Invoke-Parallel {
   
   Фоновые задания выполняются взаимодействуя с текущим сеансом. Выполнение скрипта Invoke-Parallel завершается после обработки всех заданий, если не указан параметр Jobs. Предел одновременно запущенных заданий задается через параметр Throttle.
 
- .PARAMETER ScriptBlock 
+ .PARAMETER Process 
   Указывает блок скрипта, используемый для параллельной обработки объектов. Переменная $_ содержит объект из InputObject: { echo $_ }. 
 
  .PARAMETER InputObject 
   Указывает входной объект. Invoke-Parallel запускает блок скрипта для набора входных объектов в отдельном фоновом задании. Кол-во входных объектов, обрабатываемых одним заданием, задается параметром ObjPerJob.
 
  .PARAMETER Begin
-  Указывает блок скрипта, запускаемый перед выполнением ScriptBlock. 
+  Указывает блок скрипта, запускаемый перед выполнением Process. 
   
  .PARAMETER End
-  Указывает блок скрипта, запускаемый после выполнения ScriptBlock. 
+  Указывает блок скрипта, запускаемый после выполнения Process. 
   
  .PARAMETER Throttle 
   Указывает максимальное количество одновременно запущенных фоновых заданий.
 
  .PARAMETER ObjPerJob 
   Указывает кол-во объектов, передаваемых в одно задание.
+  
+ .PARAMETER ArgumentList
+  Список параметров для скриптов Begin, End и Process. Для передачи параметров используйте param(): { param($arg1, $arg2,...); ... }. Также можно использовать массив $Args.
   
  .PARAMETER Jobs 
   Ссылочная переменная для обмена данными о фоновых заданиях. Тип переменной должен быть System.Array. Если данный параметр не указан, то скрипт Invoke-Parallel завершится только после обработки всех входных объектов.
@@ -823,6 +826,13 @@ function Invoke-Parallel {
    -----------
    Первая команда вернет неполный список из чисел в случайном порядке. Оставшиеся числа будут возвращены второй командой.
    
+ .EXAMPLE 
+   PS C:\> 1..5 | Foreach-Parallel {param($i); $_ * $i } -Args 3
+
+   Описание
+   -----------
+   На экран будут выведен список чисел от 1 до 5 умноженных на 3, порядок вывода зависит от времени завершения фоновых заданий.
+   
  .FUNCTIONALITY  
 
  .NOTES 
@@ -830,8 +840,8 @@ function Invoke-Parallel {
 	[cmdletbinding(DefaultParameterSetName="Auto")]
 	param( 
         [Parameter(Position=0, Mandatory=$true, ParameterSetName="Auto")] 
-		[Alias("Process")]
-        [System.Management.Automation.ScriptBlock]$ScriptBlock,
+		[Alias("ScriptBlock")]
+        [System.Management.Automation.ScriptBlock]$Process,
         [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Auto")] 
 		[AllowNull()]
         [PSObject]$InputObject,
@@ -847,6 +857,10 @@ function Invoke-Parallel {
 		[Parameter(Position=5, Mandatory=$false, ParameterSetName="Auto")]
 		[ValidateRange(1,16384)]
 		[int]$ObjPerJob = 1,
+		[Parameter(Position=6, Mandatory=$false, ParameterSetName="Auto")]
+		[Alias("Args")]
+		[AllowNull()]
+		[Object[]]$ArgumentList = $null,
 		[Parameter(Mandatory=$false)]
 		[ValidateScript({ $_.value -is [System.Array]})]
 		[ref]$Jobs,
@@ -861,14 +875,16 @@ function Invoke-Parallel {
 			$script:jobList = @() 
 		}
 		$script:objList = @()
-		
 		function pushObjListToJobList() {
 			if ($script:objList.count -eq 0) { return }
-			$script:jobList += Start-Job -Args $ScriptBlock, $Begin, $End, $script:objList, $pwd -ScriptBlock { 
-				Param($sb, $b, $e, $param, $pwd)
-				$Process = [ScriptBlock]::Create($sb)
-				$Begin = [ScriptBlock]::Create($b)
-				$End = [ScriptBlock]::Create($e)
+			$script:jobList += Start-Job -Args $Process, $Begin, $End, $script:objList, $pwd, $ArgumentList -ScriptBlock { 
+				Param($p, $b, $e, $param, $pwd, [Object[]]$al)
+				$ProcessBase = [ScriptBlock]::Create($p)
+				$BeginBase = [ScriptBlock]::Create($b)
+				$EndBase = [ScriptBlock]::Create($e)
+				$Process = [ScriptBlock]::Create({$ProcessBase.Invoke($al)})
+				$Begin = [ScriptBlock]::Create({$BeginBase.Invoke($al)})
+				$End = [ScriptBlock]::Create({$EndBase.Invoke($al)})
 				Set-Location $pwd
 				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
 				#todo: сохранить информацию о скрытии параметров (get-process после %% выдает все параметры)
@@ -906,7 +922,7 @@ function Invoke-Parallel {
 			Start-Sleep -Milliseconds 100
 		}
 		
-		Write-debug "ScriptBlock = $($ScriptBlock)"
+		Write-debug "Process = $($Process)"
 		Write-debug "Object = $($InputObject)"
 		$script:objList += ,$InputObject
 		Write-debug "objList = $script:objList"
