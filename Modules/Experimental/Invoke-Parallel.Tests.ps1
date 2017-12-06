@@ -40,4 +40,12 @@ Describe "Invoke-Parallel" {
 		$result = 1..10 | Foreach-Parallel -Begin { $a = 0 } -process { $a += $_ } -end { $a } -ObjPerJob 4
 		$result | Should Be (1 + 2 + 3 + 4), (5 + 6 + 7 + 8), (9 + 10)
 	}
+	
+	It "отправка `$null" {
+		$result = 1, $null, 3 | Foreach-Parallel { $_ }
+		$result.Count | Should Be 3
+		$result[0] | Should Be 1
+		$result[1] | Should Be $null
+		$result[2] | Should Be 3
+	}
 }
