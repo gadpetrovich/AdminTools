@@ -178,7 +178,7 @@ function Get-BiosInfo
    Эта команда возвращает информацию о логическом диске C: на текущем компьютере. 
  
  .Example
-   PS C:\> [PS] C:\Program Files\SysInternals>Get-LogicalDiskInfo -ComputerName comp1, comp2, comp3 | ? { $_.DriveType -eq 3 } | Update-Length FreeSpace, Size | select ComputerName, DeviceID, FileSystem, FreeSpace, Size, VolumeName | fta
+   PS C:\> Get-LogicalDiskInfo -ComputerName comp1, comp2, comp3 | ? { $_.DriveType -eq 3 } | Update-Length FreeSpace, Size | select ComputerName, DeviceID, FileSystem, FreeSpace, Size, VolumeName | fta
 
    Описание
    -----------

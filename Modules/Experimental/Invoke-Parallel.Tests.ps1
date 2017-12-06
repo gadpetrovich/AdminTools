@@ -37,7 +37,7 @@ Describe "Invoke-Parallel" {
 	}
 	
 	It "проверка Begin и End" {
-		$result = 1..10 | Foreach-Parallel -Begin { $a = 0 } -process { $a += $_ } -end { $a } -ObjPerJob 4
+		$result = 1..10 | Foreach-Parallel -Begin { $script:a = 0 } -process { $script:a += $_ } -end { $a } -ObjPerJob 4
 		$result | Should Be (1 + 2 + 3 + 4), (5 + 6 + 7 + 8), (9 + 10)
 	}
 	
@@ -47,5 +47,17 @@ Describe "Invoke-Parallel" {
 		$result[0] | Should Be 1
 		$result[1] | Should Be $null
 		$result[2] | Should Be 3
+	}
+	
+	It "передача одного аргумента" {
+		$test = 1..5 | % { $_ * 3 }
+		$result = 1..5 | Foreach-Parallel {param($i); $_ * $i } -Args 3
+		$result | Should Be $test
+	}
+	
+	It "передача двух аргументов" {
+		$test = 4, 6, 12, 12, 20
+		$result = 1..5 | Foreach-Parallel {$_ * $args[$_ % 2] } -Args 3, 4
+		$result | Should Be $test
 	}
 }
