@@ -882,10 +882,9 @@ function Invoke-Parallel {
 				$ProcessBase = [ScriptBlock]::Create($p)
 				$BeginBase = [ScriptBlock]::Create($b)
 				$EndBase = [ScriptBlock]::Create($e)
-				$Process = {$ProcessBase.Invoke($al)}
-				$Begin = {$BeginBase.Invoke($al)}
-				$End = {$EndBase.Invoke($al)}
-				
+				$Process = {. $ProcessBase @al}
+				$Begin = {. $BeginBase @al}
+				$End = {. $EndBase @al}
 				Set-Location $pwd
 				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
 				#todo: сохранить информацию о скрытии параметров (get-process после %% выдает все параметры)
