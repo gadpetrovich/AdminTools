@@ -757,21 +757,37 @@ function Join-Objects
 		[ValidateSet("AllInLeft","OnlyIfInBoth","AllInBoth", "AllInRight")]
 		[String]$Type="OnlyIfInBoth"
 	)
-	
-	process {
-		if ($Objects.Count -ne $Properties.Count) {
+	begin {
+        if ($Objects.Count -ne $Properties.Count) {
 			throw "Кол-во списков и выбранных свойств не совпадает"
 		}
-		$script = { 
+        $script = { 
 			$res = $true
 			foreach ($prop in $JoinProperties) {
 				$res = $res -and ($Args[0].$prop -ieq $Args[1].$prop)
 			}
 			$res
 		}
-		$res = Join-Object -LeftObject $objects[0] -RightObject $objects[1] -FilterScript $script -LeftProperty ($JoinProperties + $Properties[0]) -RightProperty $Properties[1] -Type $Type
+        $PropertiesWithJoins = foreach ($property in $Properties) {
+            ,@($JoinProperties + $property | select -Unique)
+        }
+    }
+	process {
+		$res = Join-Object -LeftObject $objects[0] -RightObject $objects[1] -FilterScript $script -LeftProperty $PropertiesWithJoins[0] -RightProperty $PropertiesWithJoins[1] -Type $Type
 		for ($i = 2; $i -lt $Objects.Count; $i++) {
-			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $Properties[$i] -Type $Type
+			$res = $res | join-object -RO $objects[$i] -F $script -LP * -RP $PropertiesWithJoins[$i] -Type $Type
+			
+		}
+        foreach ($row in $res) {
+            foreach ($prop in $JoinProperties) {
+                for ($i = 1; $i -lt $Objects.Count; $i++) {
+                    $JoinPropertyName = "Join$prop$(if ($i -eq 1) {''} else {$i} )"
+                    if ($row.$prop -eq $null) {
+				        $row.$prop = $row.$JoinPropertyName
+			        }
+                    $row.PSObject.Properties.Remove($JoinPropertyName)
+                }
+            }
 		}
 		$res
 	}
