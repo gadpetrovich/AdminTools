@@ -35,4 +35,18 @@ Describe "Join-Objects" {
 		$res.Name | Should Be "a", "b", "c"
         ($res | gm -MemberType NoteProperty).Name | Should Be "JoinLastWriteTime", "LastWriteTime", "Name"
     }
+
+    
+    It "объединение по типу AllInBoth, с двумя параметрами" {
+		$res = Join-Objects $a, $b name, PSDrive ("LastWriteTime"), ("LastWriteTime") AllInBoth
+		$res.Name | Should Be "a", "b", "c"
+        ($res | gm -MemberType NoteProperty).Name | Should Be "JoinLastWriteTime", "LastWriteTime", "Name", "PSDrive"
+        $res[0].LastWriteTime | Should Be $a[0].LastWriteTime
+        $res[1].LastWriteTime | Should Be $a[1].LastWriteTime
+        $res[2].LastWriteTime | Should Be $null
+		$res[0].JoinLastWriteTime | Should Be $b[0].LastWriteTime
+        $res[1].JoinLastWriteTime | Should Be $null
+        $res[2].JoinLastWriteTime | Should Be $b[1].LastWriteTime
+        $res.PSDrive | Should Be "TestDrive", "TestDrive", "TestDrive"
+    }
 }
