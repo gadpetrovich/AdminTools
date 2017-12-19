@@ -69,13 +69,50 @@ function Get-Program
 		$DefaultProps = @("ComputerName", "Name", "Version", "InstalledDate")
 		$DefaultDisplay = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$DefaultProps)
 		$PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($DefaultDisplay)
+
+        
+        #---MOCKS----
+        function Open-RegistryRemoteKey($Computer, $Arch = [Microsoft.Win32.RegistryView]::Registry32) {
+            return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
+        }
+
+        function Open-RegistrySubKey($HKLM, $Name) {
+            return $HKLM.OpenSubKey($Name)
+        }
+
+        function Close-RegistryKey($Key) {
+            $Key.Close()
+        }
+
+        function Get-RegistryValue($Key, $ValueName) {
+            return $Key.GetValue($ValueName)
+        }
+
+        function Get-RegistryValueNames($Key) {
+            return $Key.GetValueNames()
+        }
+
+        function Get-RegistrySubKeyNames($Key) { 
+            return $Key.GetSubKeyNames()
+        }
+
+        function Get-Architectures($Computer) {
+            $archs = @([Microsoft.Win32.RegistryView]::Registry32)
+			$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
+			if ($arch -Match "64") {
+				$archs += [Microsoft.Win32.RegistryView]::Registry64
+			}
+            return $archs
+        }
+
+        #--/MOCKS/---
 	}            
 
 	process {    
 		
-		function get_installed_date($AppDetails, $Computer) {
+		function Get-InstalledDate($AppDetails, $Computer) {
 			
-			$AppInstalledDate = $AppDetails.GetValue("InstallDate")
+			$AppInstalledDate = Get-RegistryValue $AppDetails InstallDate
 			if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
 					$AppInstalledDate.Length -eq 8) {
 				$Year = $AppInstalledDate.Substring(0,4)
@@ -90,64 +127,64 @@ function Get-Program
 			return $regdata.LastWriteTime
 		}
 		
-		function get_app_object($Computer) {
+		function New-AppObject($Computer) {
 			$OutputObj = "" | Select-Object ComputerName, Name, Version, Vendor, InstalledDate, `
-				InstallLocation, UninstallKey, QuietUninstallKey, GUID
+				InstallLocation, UninstallKey, QuietUninstallKey, GUID, Arch
 			$OutputObj.ComputerName = $Computer.ToUpper()
 			return $OutputObj
 		}
 		
-		function get_ie_application($Computer) {
-			$OutputObj = get_app_object $Computer
+		function Get-InternetExplorerApp($Computer) {
+			$OutputObj = New-AppObject $Computer
 			$OutputObj.Name = "Internet Explorer"
 			$OutputObj.Vendor = "Microsoft Corporation"
 			
 			if ($OutputObj.Name -notmatch $AppMatch) { return }
 			
-			$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer)
-			$key = $HKLM.OpenSubKey("SOFTWARE\Microsoft\Internet Explorer")
-			if ($key.getvaluenames() -contains "svcVersion") {
-				$OutputObj.Version = $key.GetValue("svcVersion")
-			} elseif ($key.getvaluenames() -contains "Version") {
-				$OutputObj.Version = $key.GetValue("Version")
+			$HKLM = Open-RegistryRemoteKey $Computer
+			$key = Open-RegistrySubKey $HKLM "SOFTWARE\Microsoft\Internet Explorer"
+			if ((Get-RegistryValueNames $key) -contains "svcVersion") {
+				$OutputObj.Version = Get-RegistryValue $key svcVersion
+			} elseif ((Get-RegistryValueNames $key) -contains "Version") {
+				$OutputObj.Version = Get-RegistryValue $key Version
 			}
-			$key.Close()
-			$HKLM.Close()
+			Close-RegistryKey $key
+			Close-RegistryKey $HKLM
 			if ($null -ne $OutputObj.Version) {
 				$OutputObj
 			}
 			Write-Debug ("Компьютер $Computer, internet explorer версии " + $OutputObj.Version)
 		}
 		
-		function get_application($Computer, $AppRegistry, $App)
-		{
-			$OutputObj = get_app_object $Computer
-			$AppDetails = $HKLM.OpenSubKey($AppRegistry + "\\" + $App)
-			$OutputObj.Name = $AppDetails.GetValue("DisplayName")
-			$OutputObj.UninstallKey = $AppDetails.GetValue("UninstallString")
-			$ReleaseType = $AppDetails.GetValue("ReleaseType")
-			$ParentKeyName = $AppDetails.GetValue("ParentKeyName")
-			$SystemComponent = $AppDetails.GetValue("SystemComponent")
+		function Get-Application($HKLM, $Computer, $AppRegistry, $App) {
+			$OutputObj = New-AppObject $Computer
+			$AppDetails = Open-RegistrySubKey $HKLM ($AppRegistry + "\\" + $App)
+			$OutputObj.Name = Get-RegistryValue $AppDetails DisplayName
+			$OutputObj.UninstallKey = Get-RegistryValue $AppDetails UninstallString
+			$ReleaseType = Get-RegistryValue $AppDetails ReleaseType
+			$ParentKeyName = Get-RegistryValue $AppDetails ParentKeyName
+			$SystemComponent = Get-RegistryValue $AppDetails SystemComponent
 			
 			if (
 				!$OutputObj.Name -or
 				$OutputObj.Name -notmatch $AppMatch -or
 				(!$ShowUpdates -and ($ReleaseType -imatch "(Update|Hotfix)" -or $ParentKeyName)) -or
 				(!$ShowSystemComponents -and $SystemComponent -gt 0)
-			) { $AppDetails.Close(); return }
+			) { Close-RegistryKey $AppDetails; return }
 			
-			$OutputObj.Version = $AppDetails.GetValue("DisplayVersion")
-			$OutputObj.Vendor = $AppDetails.GetValue("Publisher")
-			$OutputObj.InstalledDate = get_installed_date $AppDetails $Computer 
-			$OutputObj.InstallLocation = $AppDetails.GetValue("InstallLocation")
-			$OutputObj.QuietUninstallKey = $AppDetails.GetValue("QuietUninstallString")
+			$OutputObj.Version = Get-RegistryValue $AppDetails DisplayVersion
+			$OutputObj.Vendor = Get-RegistryValue $AppDetails Publisher
+			$OutputObj.InstalledDate = Get-InstalledDate $AppDetails $Computer 
+			$OutputObj.InstallLocation = Get-RegistryValue $AppDetails InstallLocation
+			$OutputObj.QuietUninstallKey = Get-RegistryValue $AppDetails QuietUninstallString
 			$OutputObj.GUID = $App
+            $OutputObj.Arch = if ($HKLM.View -eq "Registry32") { "x86" } else { "x64" }
 			$OutputObj
 			
-			$AppDetails.Close()
+			Close-RegistryKey $AppDetails
 		}
 		
-		function set_standardMembers{
+		function Set-StandardMembers {
 			[cmdletbinding()] 
 			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
 			Process {
@@ -156,13 +193,13 @@ function Get-Program
 			}
 		}
 		
-		function get_applications($Computer, $UninstallRegKey) {
-			$UninstallRef  = $HKLM.OpenSubKey($UninstallRegKey)
+		function Get-Applications($HKLM, $Computer, $UninstallRegKey) {
+			$UninstallRef  = Open-RegistrySubKey $HKLM $UninstallRegKey
 			if ($null -eq $UninstallRef) { return }
-			$Applications = $UninstallRef.GetSubKeyNames()
-			$UninstallRef.Close()
+			$Applications = Get-RegistrySubKeyNames $UninstallRef
+			Close-RegistryKey $UninstallRef
 			foreach ($App in $Applications) {
-				get_application $Computer $UninstallRegKey $App
+				Get-Application $HKLM $Computer $UninstallRegKey $App
 			}
 		}
 		
@@ -175,21 +212,16 @@ function Get-Program
 				}
 				$key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 				
-				$archs = @([Microsoft.Win32.RegistryView]::Registry32)
-				$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
-				if ($arch -Match "64") {
-					$archs += [Microsoft.Win32.RegistryView]::Registry64
-				}
+				$archs = Get-Architectures $computer
 				
 				foreach ($arch in $archs) {
-					$HKLM = [microsoft.win32.registrykey]::OpenRemoteBaseKey(
-						'LocalMachine', $computer, $arch)
-					$apps = get_applications $computer $key
-					$HKLM.Close()  
-					$apps | set_standardMembers
+					$HKLM = Open-RegistryRemoteKey $computer $arch
+					$apps = Get-Applications $HKLM $computer $key
+					Close-RegistryKey $HKLM
+					$apps | Set-StandardMembers
 				}
 				
-				get_ie_application $Computer
+				Get-InternetExplorerApp $Computer
 			} catch {
 				Write-Error $_
 			}
