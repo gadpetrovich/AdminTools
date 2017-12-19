@@ -30,13 +30,13 @@ Copyright = '(c) 2012 Pavel Sharapov. Все права защищены.'
 Description = ''
 
 # Минимальный номер версии обработчика Windows PowerShell, необходимой для работы данного модуля
-PowerShellVersion = ''
+PowerShellVersion = '5.0'
 
 # Имя узла Windows PowerShell, необходимого для работы данного модуля
 PowerShellHostName = ''
 
 # Минимальный номер версии узла Windows PowerShell, необходимой для работы данного модуля
-PowerShellHostVersion = ''
+PowerShellHostVersion = '5.0'
 
 # Минимальный номер версии компонента .NET Framework, необходимой для данного модуля
 DotNetFrameworkVersion = ''
@@ -66,7 +66,13 @@ FormatsToProcess = @()
 NestedModules = @()
 
 # Функции для экспорта из данного модуля
-FunctionsToExport = '*'
+FunctionsToExport = 
+	"Get-Program", "Wait-InstallProgram", "Wait-WMIRestartComputer", "Get-RemoteCmd", "Uninstall-Program", "Install-Program",
+	"Skip-Null", "Get-NetView", "Get-NetBrowserStat", "Format-TableAuto", "New-PInvoke", "Assert-PSWindow", "ConvertTo-Encoding", "Get-Property", "ConvertTo-HashTable", "Start-ProgressSleep", "Select-Choice", "Get-RegKeyLastWriteTime", "Convert-PSObjectAuto", "Join-Object", "Join-Objects", "Invoke-Parallel", "Invoke-Progress", "Set-ActualBufferSize",
+	"ConvertTo-HumanReadable", "Get-DiskUsage", "Get-DiskUsageLinear", "Get-DiskUsageRecursive", "Update-DirLength", "Update-Length",
+	"Start-RemoteService", "Stop-RemoteService",
+	"Add-UserToAdmin", "Get-AdminUsers", "Remove-UserFromAdmin",
+	"Get-BiosInfo", "Get-ComputerInfo", "Get-DiskAssociation", "Get-DiskDriveInfo", "Get-DiskPartitionInfo", "Get-LogicalDiskInfo", "Get-MotherboardInfo", "Get-NetworkAdapterConfigurationInfo", "Get-NetworkAdapterInfo", "Get-OnBoardDeviceInfo", "Get-OsInfo", "Get-PhysicalMemoryInfo", "Get-ProcessInfo", "Get-ProcessorInfo", "Get-ServiceInfo", "Get-SoundDeviceInfo", "Get-VideoControllerInfo"
 
 # Командлеты для экспорта из данного модуля
 CmdletsToExport = '*'
@@ -79,7 +85,7 @@ AliasesToExport = '*'
 
 # Список всех модулей, входящих в пакет данного модуля
 #ModuleList = @()
-ModuleList = 'FileSystem', 'Programs', 'UsersAndGroups', 'Services', 'Test', 'WMI'
+ModuleList = 'Experimental', 'FileSystem', 'Programs', 'UsersAndGroups', 'Services', 'WMI'
 
 # Список всех файлов, входящих в пакет данного модуля
 FileList = 'AdminTools.psd1', 'AdminTools.psm1'

@@ -1,4 +1,39 @@
-﻿<# 
+﻿#---MOCKS----
+function Open-RegistryRemoteKey($Computer, $Arch = [Microsoft.Win32.RegistryView]::Registry32) {
+    return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
+}
+
+function Open-RegistrySubKey($HKLM, $Name) {
+    return $HKLM.OpenSubKey($Name)
+}
+
+function Close-RegistryKey($Key) {
+    $Key.Close()
+}
+
+function Get-RegistryValue($Key, $ValueName) {
+    return $Key.GetValue($ValueName)
+}
+
+function Get-RegistryValueNames($Key) {
+    return $Key.GetValueNames()
+}
+
+function Get-RegistrySubKeyNames($Key) { 
+    return $Key.GetSubKeyNames()
+}
+
+function Get-Architectures($Computer) {
+    $archs = @([Microsoft.Win32.RegistryView]::Registry32)
+	$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
+	if ($arch -Match "64") {
+		$archs += [Microsoft.Win32.RegistryView]::Registry64
+	}
+    return $archs
+}
+#--/MOCKS/---
+
+<# 
  .Synopsis
   Возвращает список установленных программ.
 
@@ -69,43 +104,6 @@ function Get-Program
 		$DefaultProps = @("ComputerName", "Name", "Version", "InstalledDate")
 		$DefaultDisplay = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$DefaultProps)
 		$PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($DefaultDisplay)
-
-        
-        #---MOCKS----
-        function Open-RegistryRemoteKey($Computer, $Arch = [Microsoft.Win32.RegistryView]::Registry32) {
-            return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
-        }
-
-        function Open-RegistrySubKey($HKLM, $Name) {
-            return $HKLM.OpenSubKey($Name)
-        }
-
-        function Close-RegistryKey($Key) {
-            $Key.Close()
-        }
-
-        function Get-RegistryValue($Key, $ValueName) {
-            return $Key.GetValue($ValueName)
-        }
-
-        function Get-RegistryValueNames($Key) {
-            return $Key.GetValueNames()
-        }
-
-        function Get-RegistrySubKeyNames($Key) { 
-            return $Key.GetSubKeyNames()
-        }
-
-        function Get-Architectures($Computer) {
-            $archs = @([Microsoft.Win32.RegistryView]::Registry32)
-			$arch = (get-wmiobject -Class Win32_OperatingSystem -ComputerName $Computer).OSArchitecture
-			if ($arch -Match "64") {
-				$archs += [Microsoft.Win32.RegistryView]::Registry64
-			}
-            return $archs
-        }
-
-        #--/MOCKS/---
 	}            
 
 	process {    
