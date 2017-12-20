@@ -5,7 +5,7 @@
 remove-module AdminTools -ErrorAction SilentlyContinue; import-module AdminTools
 
 Describe "Get-Program" {
-    Context "Список из двух программ" {
+    Context "Локальные программы и программы на компьютерах в сети" {
         Mock -ModuleName AdminTools.Programs Open-RegistryRemoteKey{ 
             #return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
             $OutputObj = "" | Select-Object View, ComputerName
@@ -123,10 +123,8 @@ Describe "Get-Program" {
             return $ComputerName -in $env:COMPUTERNAME, "comp1" , "comp2"
         }
 
-        Mock -ModuleName AdminTools.Programs Get-RegKeyLastWriteTime { #param($ComputerName, $Key, $SubKey, [switch]$NoEnumKey)
-            $OutputObj = "" | Select-Object LastWriteTime
-            $OutputObj.LastWriteTime = 123
-            $OutputObj
+        Mock -ModuleName AdminTools.Programs Get-RegKeyLastWriteTime { #param($Key)
+            return ([DateTime]::Parse("01.01.2017 1:00"))
         }
         
 		$result = Get-Program ".*"
@@ -166,4 +164,17 @@ Describe "Get-Program" {
 		    $result.Name | Should Be "application 6"
         }
     }
+
+    Context "32-битная система" {
+    }
+
+    Context "64-битная система" {
+    }
+
+    Context "64-битная система, поиск программ на 32-битных системах" {
+    }
+
+    Context "32-битная система, поиск программ на 64-битных системах" {
+    }
+
 }

@@ -68,7 +68,7 @@ NestedModules = @()
 # Функции для экспорта из данного модуля
 FunctionsToExport = 
 	"Get-Program", "Wait-InstallProgram", "Wait-WMIRestartComputer", "Get-RemoteCmd", "Uninstall-Program", "Install-Program",
-	"Skip-Null", "Get-NetView", "Get-NetBrowserStat", "Format-TableAuto", "New-PInvoke", "Assert-PSWindow", "ConvertTo-Encoding", "Get-Property", "ConvertTo-HashTable", "Start-ProgressSleep", "Select-Choice", "Get-RegKeyLastWriteTime", "Convert-PSObjectAuto", "Join-Object", "Join-Objects", "Invoke-Parallel", "Invoke-Progress", "Set-ActualBufferSize",
+	"Skip-Null", "Get-NetView", "Get-NetBrowserStat", "Format-TableAuto", "New-PInvoke", "Assert-PSWindow", "ConvertTo-Encoding", "Get-Property", "ConvertTo-HashTable", "Start-ProgressSleep", "Select-Choice", "Convert-PSObjectAuto", "Join-Object", "Join-Objects", "Invoke-Parallel", "Invoke-Progress", "Set-ActualBufferSize",
 	"ConvertTo-HumanReadable", "Get-DiskUsage", "Get-DiskUsageLinear", "Get-DiskUsageRecursive", "Update-DirLength", "Update-Length",
 	"Start-RemoteService", "Stop-RemoteService",
 	"Add-UserToAdmin", "Get-AdminUsers", "Remove-UserFromAdmin",

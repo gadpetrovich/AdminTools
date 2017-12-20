@@ -31,6 +31,50 @@ function Get-Architectures($Computer) {
 	}
     return $archs
 }
+
+
+function Get-RegKeyLastWriteTime {
+	[CmdletBinding()]
+
+	param(
+		[parameter(Mandatory=$true)]
+		$Key
+	)
+
+	BEGIN {
+	}
+	PROCESS {
+		
+$sig4 = @'
+[DllImport("advapi32.dll")]
+public static extern int RegQueryInfoKey(
+	int hkey,
+	StringBuilder lpClass,
+	ref int lpcbClass,
+	int lpReserved,
+	out int lpcSubKeys,
+	out int lpcbMaxSubKeyLen,
+	out int lpcbMaxClassLen,
+	out int lpcValues,
+	out int lpcbMaxValueNameLen,
+	out int lpcbMaxValueLen,
+	out int lpcbSecurityDescriptor,
+	out long lpftLastWriteTime);
+'@
+		$type4 = Add-Type -MemberDefinition $sig4 -Name Win32Utils `
+			-Namespace RegQueryInfoKey -Using System.Text -PassThru
+
+		#initialize variables
+		$hKeyref = $Key.Handle.DangerousGetHandle()
+		$time = New-Object Long
+		$result = $type4::RegQueryInfoKey($hKeyref, $null, [ref]$null, 0, [ref]$null, [ref]$null, `
+			[ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$null, [ref]$time)
+		#create output object
+		return (Get-Date $time).AddYears(1600).AddHours(-4)
+	}
+}
+
+
 #--/MOCKS/---
 
 class Program
@@ -130,10 +174,7 @@ function Get-Program
 				return New-Object DateTime($Year, $Month, $Day)	
 			}
 			
-			$regdata = Get-RegKeyLastWriteTime -ComputerName $computer -Key HKLM `
-				-SubKey $AppDetails.name.Substring($AppDetails.Name.IndexOf("\")+1) -NoEnumKey
-			
-			return $regdata.LastWriteTime
+			return (Get-RegKeyLastWriteTime -Key $AppDetails)
 		}
 		
 		function New-AppObject($Computer) {
