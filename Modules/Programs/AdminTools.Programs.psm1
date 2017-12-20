@@ -33,6 +33,20 @@ function Get-Architectures($Computer) {
 }
 #--/MOCKS/---
 
+class Program
+{
+    [string]$ComputerName
+    [string]$Name
+    [string]$Version
+    [string]$Vendor
+    [DateTime]$InstalledDate
+    [string]$InstallLocation
+    [string]$UninstallKey
+    [string]$QuietUninstallKey
+    [string]$GUID
+    [string]$Arch
+}
+
 <# 
  .Synopsis
   Возвращает список установленных программ.
@@ -100,10 +114,7 @@ function Get-Program
 		[switch]$ShowSystemComponents
 	)            
 
-	begin {
-		$DefaultProps = @("ComputerName", "Name", "Version", "InstalledDate")
-		$DefaultDisplay = New-Object System.Management.Automation.PSPropertySet("DefaultDisplayPropertySet", [string[]]$DefaultProps)
-		$PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($DefaultDisplay)
+	begin { 
 	}            
 
 	process {    
@@ -126,8 +137,7 @@ function Get-Program
 		}
 		
 		function New-AppObject($Computer) {
-			$OutputObj = "" | Select-Object ComputerName, Name, Version, Vendor, InstalledDate, `
-				InstallLocation, UninstallKey, QuietUninstallKey, GUID, Arch
+			$OutputObj = [Program]::new()
 			$OutputObj.ComputerName = $Computer.ToUpper()
 			return $OutputObj
 		}
@@ -182,15 +192,6 @@ function Get-Program
 			Close-RegistryKey $AppDetails
 		}
 		
-		function Set-StandardMembers {
-			[cmdletbinding()] 
-			param ([Parameter(Mandatory=$true, ValueFromPipeline=$true)][PSObject]$InputObject) 
-			Process {
-				$InputObject | Add-Member MemberSet PSStandardMembers $PSStandardMembers
-				return $InputObject
-			}
-		}
-		
 		function Get-Applications($HKLM, $Computer, $UninstallRegKey) {
 			$UninstallRef  = Open-RegistrySubKey $HKLM $UninstallRegKey
 			if ($null -eq $UninstallRef) { return }
@@ -216,7 +217,7 @@ function Get-Program
 					$HKLM = Open-RegistryRemoteKey $computer $arch
 					$apps = Get-Applications $HKLM $computer $key
 					Close-RegistryKey $HKLM
-					$apps | Set-StandardMembers
+					$apps
 				}
 				
 				Get-InternetExplorerApp $Computer

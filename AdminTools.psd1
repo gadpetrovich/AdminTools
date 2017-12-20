@@ -9,7 +9,7 @@
 @{
 
 # Файл модуля скрипта или двоичного модуля, связанный с данным манифестом
-ModuleToProcess = 'AdminTools.psm1'
+RootModule = 'AdminTools.psm1'
 
 # Номер версии данного модуля.
 ModuleVersion = '1.0'
@@ -36,7 +36,7 @@ PowerShellVersion = '5.0'
 PowerShellHostName = ''
 
 # Минимальный номер версии узла Windows PowerShell, необходимой для работы данного модуля
-PowerShellHostVersion = '5.0'
+PowerShellHostVersion = '1.0'
 
 # Минимальный номер версии компонента .NET Framework, необходимой для данного модуля
 DotNetFrameworkVersion = ''
@@ -60,7 +60,7 @@ ScriptsToProcess = @()
 TypesToProcess = @()
 
 # Файлы формата (PS1XML-файлы), которые загружаются при импорте данного модуля
-FormatsToProcess = @()
+FormatsToProcess = "AdminTools.format.ps1xml"
 
 # Модули для импортирования в модуль, указанный в параметре ModuleToProcess, в качестве вложенных модулей
 NestedModules = @()
