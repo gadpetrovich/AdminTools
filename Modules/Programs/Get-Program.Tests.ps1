@@ -17,7 +17,7 @@ Describe "Get-Program" {
         Mock -ModuleName AdminTools.Programs Open-RegistrySubKey { #param($HKLM, $Name)
             #return $HKLM.OpenSubKey($Name)
             $OutputObj = "" | Select-Object Name
-            $OutputObj.Name = $Name
+            $OutputObj.Name = $HKLM.ComputerName + "\\" + $Name
             return $OutputObj
         }
 
@@ -28,7 +28,7 @@ Describe "Get-Program" {
         Mock -ModuleName AdminTools.Programs Get-RegistryValue { #param($Key, $ValueName)
             #return $Key.GetValue($ValueName)
             
-            if ($Key.Name -ieq "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app1") {
+            if ($Key.Name -ieq "$($env:COMPUTERNAME)\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app1") {
                 switch ($ValueName) {
                     "DisplayName" { "app1"; Break }
                     "DisplayVersion" { "1.1.1.1"; Break }
@@ -36,10 +36,50 @@ Describe "Get-Program" {
                     "SystemComponent" { 0;  Break }
                     default { ""; Break }
                 }
-            } elseif ($Key.Name -ieq "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app2") {
+            } elseif ($Key.Name -ieq "$($env:COMPUTERNAME)\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app2") {
                 switch ($ValueName) {
                     "DisplayName" { "app2"; Break }
                     "DisplayVersion" { "2.2.2.2"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp1\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app3") {
+                switch ($ValueName) {
+                    "DisplayName" { "application 3"; Break }
+                    "DisplayVersion" { "1.0.0.1"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp1\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app4") {
+                switch ($ValueName) {
+                    "DisplayName" { "application 4"; Break }
+                    "DisplayVersion" { "2.0.0.4"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app5") {
+                switch ($ValueName) {
+                    "DisplayName" { "application 5"; Break }
+                    "DisplayVersion" { "3.0.0.5"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app6") {
+                switch ($ValueName) {
+                    "DisplayName" { "application 6"; Break }
+                    "DisplayVersion" { "2.0.0.6"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app7") {
+                switch ($ValueName) {
+                    "DisplayName" { "application 7"; Break }
+                    "DisplayVersion" { "2.0.0.7"; Break }
                     "ParentKeyName" { $null;  Break }
                     "SystemComponent" { 0;  Break }
                     default { ""; Break }
@@ -56,8 +96,14 @@ Describe "Get-Program" {
 
         Mock -ModuleName AdminTools.Programs Get-RegistrySubKeyNames { #param($Key)
             #return $Key.GetSubKeyNames()
-            if ($Key.Name -ieq "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
+            if ($Key.Name -ieq "$($env:COMPUTERNAME)\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
                 return @("app1", "app2")
+            } 
+            elseif ($Key.Name -ieq "comp1\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
+                return @("app3", "app4")
+            } 
+            elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
+                return @("app5", "app6", "app7")
             } 
             else {
                 return "asdf"
@@ -74,7 +120,7 @@ Describe "Get-Program" {
         }
 
         Mock -ModuleName AdminTools.Programs Test-Connection { #param($ComputerName, $Count, $ea)
-            return $true
+            return $ComputerName -in $env:COMPUTERNAME, "comp1" , "comp2"
         }
 
         Mock -ModuleName AdminTools.Programs Get-RegKeyLastWriteTime { #param($ComputerName, $Key, $SubKey, [switch]$NoEnumKey)
@@ -90,6 +136,34 @@ Describe "Get-Program" {
         }
         It "Версии" {
 		    $result.Version | Should Be "1.1.1.1", "2.2.2.2"   
+        }
+        It "Компьютер" {
+            $result.ComputerName | select -Unique | Should Be $env:COMPUTERNAME
+        }
+
+        $result = Get-Program -ComputerName comp1, comp2 .*
+        It "Имена приложений для компьютеров в сети" {
+		    $result.Name | Should Be "application 3", "application 4", "application 5", "application 6", "application 7"
+        }
+
+        It "Версии для приложений на компьютерах в сети" {
+		    $result.Version | Should Be "1.0.0.1", "2.0.0.4", "3.0.0.5", "2.0.0.6", "2.0.0.7"
+        }
+
+        It "Имена компьютеров" {
+		    $result.ComputerName | Should Be "comp1", "comp1", "comp2", "comp2", "comp2"
+        }
+
+        $result = Get-Program -ComputerName fictiveComp .* -ErrorVariable err -ErrorAction SilentlyContinue
+        It "Поиск программ на несуществующем компьютере" {
+            $err.Count | Should Be 1
+            $err[0].ToString() | Should Be "Компьютер fictiveComp не отвечает"
+            $result.Count | Should Be 0
+        }
+
+        $result = Get-Program -ComputerName comp2 "^app.*6$"
+        It "Поиск программы по регулярному выражению" {
+		    $result.Name | Should Be "application 6"
         }
     }
 }
