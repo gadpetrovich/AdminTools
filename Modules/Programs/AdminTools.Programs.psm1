@@ -47,8 +47,8 @@ function Get-RegKeyLastWriteTime {
 		
 $sig4 = @'
 [DllImport("advapi32.dll")]
-public static extern int RegQueryInfoKey(
-	int hkey,
+public static extern long RegQueryInfoKey(
+	long hkey,
 	StringBuilder lpClass,
 	ref int lpcbClass,
 	int lpReserved,
@@ -76,7 +76,11 @@ public static extern int RegQueryInfoKey(
 
 
 #--/MOCKS/---
-
+enum ProgramType {
+	Program
+	Update
+	SystemComponent
+}
 class Program
 {
     [string]$ComputerName
@@ -89,6 +93,7 @@ class Program
     [string]$QuietUninstallKey
     [string]$GUID
     [string]$Arch
+	[ProgramType]$Type
 }
 
 <# 
@@ -214,11 +219,19 @@ function Get-Program
 			$ParentKeyName = Get-RegistryValue $AppDetails ParentKeyName
 			$SystemComponent = Get-RegistryValue $AppDetails SystemComponent
 			
+			$OutputObj.Type = if ($ReleaseType -imatch "(Update|Hotfix)" -or $ParentKeyName) { 
+				[ProgramType]::Update
+			} elseif ($SystemComponent -gt 0) {
+				[ProgramType]::SystemComponent
+			} else {
+				[ProgramType]::Program
+			}
+			
 			if (
 				!$OutputObj.Name -or
 				$OutputObj.Name -notmatch $AppMatch -or
-				(!$ShowUpdates -and ($ReleaseType -imatch "(Update|Hotfix)" -or $ParentKeyName)) -or
-				(!$ShowSystemComponents -and $SystemComponent -gt 0)
+				(!$ShowUpdates -and ($OutputObj.Type -eq [ProgramType]::Update)) -or
+				(!$ShowSystemComponents -and ($OutputObj.Type -eq [ProgramType]::SystemComponent))
 			) { Close-RegistryKey $AppDetails; return }
 			
 			$OutputObj.Version = Get-RegistryValue $AppDetails DisplayVersion

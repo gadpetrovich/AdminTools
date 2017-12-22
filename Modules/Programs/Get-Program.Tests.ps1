@@ -60,6 +60,14 @@ Describe "Get-Program" {
                     "SystemComponent" { 0;  Break }
                     default { ""; Break }
                 }
+            } elseif ($Key.Name -ieq "comp1\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\syscomp1") {
+                switch ($ValueName) {
+                    "DisplayName" { "SystemComponent 1"; Break }
+                    "DisplayVersion" { "2.0.0.4"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 1;  Break }
+                    default { ""; Break }
+                }
             } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\app5") {
                 switch ($ValueName) {
                     "DisplayName" { "application 5"; Break }
@@ -84,6 +92,32 @@ Describe "Get-Program" {
                     "SystemComponent" { 0;  Break }
                     default { ""; Break }
                 }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\upd1") {
+                switch ($ValueName) {
+                    "DisplayName" { "update 1"; Break }
+                    "DisplayVersion" { "2.0.0.8"; Break }
+                    "ParentKeyName" { $null;  Break }
+					"ReleaseType" { "Update"; Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\upd2") {
+                switch ($ValueName) {
+                    "DisplayName" { "update 2"; Break }
+                    "DisplayVersion" { "2.0.0.7"; Break }
+                    "ParentKeyName" { $null;  Break }
+					"ReleaseType" { "HotFix"; Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\upd3") {
+                switch ($ValueName) {
+                    "DisplayName" { "update 3"; Break }
+                    "DisplayVersion" { "2.0.0.7"; Break }
+                    "ParentKeyName" { "app7";  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
             } else {
                 return "asdf"
             }
@@ -100,10 +134,10 @@ Describe "Get-Program" {
                 return @("app1", "app2")
             } 
             elseif ($Key.Name -ieq "comp1\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
-                return @("app3", "app4")
+                return @("app3", "app4", "syscomp1")
             } 
             elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
-                return @("app5", "app6", "app7")
+                return @("app5", "app6", "app7", "upd1", "upd2", "upd3")
             } 
             else {
                 return "asdf"
@@ -162,6 +196,40 @@ Describe "Get-Program" {
         $result = Get-Program -ComputerName comp2 "^app.*6$"
         It "Поиск программы по регулярному выражению" {
 		    $result.Name | Should Be "application 6"
+        }
+
+        $result = Get-Program -ComputerName comp1, comp2 -ShowUpdates
+        $updates = $result | ? Type -eq Update
+        $programs = $result | ? Type -eq Program
+        It "Поиск обновлений" {
+            $result.Count | Should Be 8
+            $updates.Count | Should Be 3
+            $programs.Count | Should Be 5
+		    $updates.Name | Should Be "update 1", "update 2", "update 3"
+        }
+
+        $result = Get-Program -ComputerName comp1, comp2 -ShowSystemComponents
+        $syscomps = $result | ? Type -eq SystemComponent
+        $programs = $result | ? Type -eq Program
+        It "Поиск системных компонент" {
+            $result.Count | Should Be 6
+            $syscomps.Count | Should Be 1
+            $programs.Count | Should Be 5
+		    $syscomps.Name | Should Be "SystemComponent 1"
+        }
+
+        
+        $result = Get-Program -ComputerName comp1, comp2 -ShowSystemComponents -ShowUpdates
+        $syscomps = $result | ? Type -eq SystemComponent
+        $updates = $result | ? Type -eq Update
+        $programs = $result | ? Type -eq Program
+        It "Поиск системных компонент и обновлений" {
+            $result.Count | Should Be 9
+            $updates.Count | Should Be 3
+            $syscomps.Count | Should Be 1
+            $programs.Count | Should Be 5
+		    $syscomps.Name | Should Be "SystemComponent 1"
+            $updates.Name | Should Be "update 1", "update 2", "update 3"
         }
     }
 
