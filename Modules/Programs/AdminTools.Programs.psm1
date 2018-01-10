@@ -392,7 +392,7 @@ function Wait-WMIRestartComputer
 
 function Get-RemoteCmd([string]$ComputerName, [string] $cmd) 
 {
-	return "`"$PSScriptRoot\..\..\Apps\psexec`" \\$ComputerName -s $cmd"
+	return "`"$PSScriptRoot\..\..\Apps\psexinternal`" \\$ComputerName -accepteula -r psexinternal -s $cmd"
 }
 
 <# 
@@ -489,7 +489,7 @@ function Uninstall-Program
 			$_cmd = ""
 			if ($Interactive) { $_cmd += "-i " }
 			
-			if ($null -ne $app.QuietUninstallKey) {
+			if (! [string]::IsNullOrWhiteSpace($app.QuietUninstallKey)) {
 				$_cmd += $app.QuietUninstallKey
 			} elseif ($uninstall_key -match "msiexec" -or [string]::IsNullOrEmpty($uninstall_key)) {
 				$uninstall_guid = [regex]::match($uninstall_key, "\w{8}-\w{4}-\w{4}-\w{4}-\w{12}")
