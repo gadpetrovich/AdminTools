@@ -153,6 +153,7 @@ class Program
 #>
 function Get-Program
 {
+	[OutputType([Program])]
 	param(
 		[parameter(position=0,ValueFromPipelineByPropertyName=$true)]
 		[string]$AppMatch = "",
