@@ -688,11 +688,18 @@ function Invoke-Parallel {
 		} else { 
 			$script:jobList = @() 
 		}
+		$script:modules = (Get-Module).Path
 		$script:objList = @()
 		function pushObjListToJobList() {
 			if ($script:objList.count -eq 0) { return }
-			$script:jobList += Start-Job -Args $Process, $Begin, $End, $script:objList, $pwd, $ArgumentList -ScriptBlock { 
-				Param($p, $b, $e, $param, $pwd, [Object[]]$al)
+			$script:jobList += Start-Job -Args `
+				$Process, $Begin, $End, $script:objList, $pwd, $script:modules, $ArgumentList -ScriptBlock `
+			{ 
+				Param($p, $b, $e, $param, $pwd, $modules, [Object[]]$al)
+				$oldProgress = $ProgressPreference
+				$ProgressPreference=’SilentlyContinue’ #скрываем прогрессбар в Import-Module
+				$modules | Import-Module
+				$ProgressPreference = $oldProgress
 				$ProcessBase = [ScriptBlock]::Create($p)
 				$BeginBase = [ScriptBlock]::Create($b)
 				$EndBase = [ScriptBlock]::Create($e)
@@ -701,7 +708,6 @@ function Invoke-Parallel {
 				$End = {. $EndBase @al}
 				Set-Location $pwd
 				$param | ForEach-Object -Process $Process -Begin $Begin -End $End
-				#todo: сохранить информацию о скрытии параметров (get-process после %% выдает все параметры)
 			}
 			write-debug "jobs = $($script:jobList | % { $_.state })"
 			$script:objList = @()

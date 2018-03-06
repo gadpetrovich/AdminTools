@@ -67,9 +67,16 @@ Describe "Invoke-Parallel" {
 		$result | Should Be $test
 	}
 
-    It "пустой список" {
+	It "пустой список" {
 		$test = $null
 		$result = @() | Foreach-Parallel {}
+		$result | Should Be $test
+	}
+	
+	
+	It "подгрузка модулей" {
+		$test = (Get-OsInfo).SerialNumber, "Continue"
+		$result = 1 | Foreach-Parallel { (Get-OsInfo).SerialNumber, $ProgressPreference.ToString() }
 		$result | Should Be $test
 	}
 }
