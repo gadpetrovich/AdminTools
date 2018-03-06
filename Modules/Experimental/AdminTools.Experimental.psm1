@@ -751,7 +751,9 @@ function Invoke-Parallel {
 		if ($PsCmdlet.ParameterSetName -ieq "Wait" -or !$Jobs) {
 			$script:jobList | Receive-Job -Wait | convertResult
 			write-debug "jobs = $script:jobList"
-			Remove-Job $script:jobList
+			if ($script:jobList) {
+				Remove-Job $script:jobList
+			}
 		} else {
 			$Jobs.value = $script:jobList 
 		} 

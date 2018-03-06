@@ -60,4 +60,16 @@ Describe "Invoke-Parallel" {
 		$result = 1..5 | Foreach-Parallel {$_ * $args[$_ % 2] } -Args 3, 4
 		$result | Should Be $test
 	}
+	
+	It "нет возвращаемых значений" {
+		$test = $null
+		$result = 1..5 | Foreach-Parallel {}
+		$result | Should Be $test
+	}
+
+    It "пустой список" {
+		$test = $null
+		$result = @() | Foreach-Parallel {}
+		$result | Should Be $test
+	}
 }
