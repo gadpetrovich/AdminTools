@@ -94,6 +94,9 @@ class Program
     [string]$GUID
     [string]$Arch
 	[ProgramType]$Type
+	[string] ToString() {
+        return $this.Name + " " + $this.Version + " " + $this.ComputerName
+    }
 }
 
 <# 
@@ -260,7 +263,7 @@ function Get-Program
 		foreach($Computer in $ComputerName) {  
 			try {          
 				Write-Debug "Берем список программ из $Computer по шаблону `"$AppMatch`""            
-				if (!(Test-Connection -ComputerName $Computer -Count 2 -ea 0)) { 
+				if (!(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) { 
 					Write-Error "Компьютер $Computer не отвечает"
 					Continue
 				}
@@ -547,7 +550,7 @@ function Uninstall-Program
 			}
 			
 			$return_value = -1
-			if(!(Test-Connection -ComputerName $ComputerName -Count 2 -ea 0)) { 
+			if(!(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) { 
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
@@ -759,7 +762,7 @@ function Install-Program()
 				throw "Для установки приложения требуются права администратора"
 			}
 			
-			if(!(Test-Connection -ComputerName $ComputerName -Count 2 -ea 0)) { 
+			if(!(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) { 
 				throw "Компьютер $ComputerName не отвечает"
 			}
 			
