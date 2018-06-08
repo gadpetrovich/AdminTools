@@ -412,7 +412,10 @@ function Get-RemoteCmd([string]$ComputerName, [string] $cmd)
  
  .Parameter GUID
   Guid деинсталлируемой программы. Может использоваться для перадачи объектов по конвейеру.
-
+ 
+ .Parameter UninstallParams
+  Дополнительные параметры удаления.
+ 
  .Parameter NoDefaultParams
   Убирает стандартные параметры удаления nsis и msiexec. Не влияет на программы, у которых есть параметр QuietUninstallKey.
   
@@ -480,6 +483,8 @@ function Uninstall-Program
 		[Alias("CN","__SERVER","Computer","CNAME", "HostName")]
 		[string]$ComputerName = $env:computername,
 		[parameter(ValueFromPipelineByPropertyName=$true)]
+		[string]$UninstallParams = "", 
+		[parameter(ValueFromPipelineByPropertyName=$true)]
 		[Alias("EmptyDefaultParams")]
 		[switch]$NoDefaultParams,
 		[switch][Alias("Visible")]$Interactive,
@@ -507,7 +512,7 @@ function Uninstall-Program
 					$params += "/qn"
 				}
 				
-				$_cmd += "msiexec $params"
+				$_cmd += "msiexec $params $UninstallParams"
 			} else {
 				if (!$NoDefaultParams) {
 					$params = "/S /x /silent /uninstall /qn /quiet /norestart"
@@ -517,7 +522,7 @@ function Uninstall-Program
 					$uninstall_key = $uninstall_key.Insert(0, '"')
 					$uninstall_key = $uninstall_key.Insert($match.Length, '"')
 				}
-				$_cmd += "$uninstall_key $params"
+				$_cmd += "$uninstall_key $params $UninstallParams"
 			}
 			return $_cmd
 		}
