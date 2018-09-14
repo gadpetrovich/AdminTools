@@ -1,4 +1,9 @@
 ﻿#---MOCKS----
+
+function Test-ComputerConnection($ComputerName) {
+    return (Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)
+}
+
 function Open-RegistryRemoteKey($Computer, $Arch = [Microsoft.Win32.RegistryView]::Registry32) {
     return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
 }
@@ -173,9 +178,15 @@ function Get-Program
 	process {    
 		
 		function Get-InstalledDate($AppDetails, $Computer) {
-			
 			$AppInstalledDate = Get-RegistryValue $AppDetails InstallDate
-			if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
+            if (![String]::IsNullOrEmpty($AppInstalledDate) -and `
+					$AppInstalledDate.Contains("/")) {
+                $date = $AppInstalledDate -split "/"
+				$Year = $date[2]
+				$Month = $date[0]
+				$Day = $date[1]
+				return New-Object DateTime($Year, $Month, $Day)	
+			} elseif (![String]::IsNullOrEmpty($AppInstalledDate) -and `
 					$AppInstalledDate.Length -eq 8) {
 				$Year = $AppInstalledDate.Substring(0,4)
 				$Month = $AppInstalledDate.Substring(4,2)
@@ -262,8 +273,8 @@ function Get-Program
 		
 		foreach($Computer in $ComputerName) {  
 			try {          
-				Write-Debug "Берем список программ из $Computer по шаблону `"$AppMatch`""            
-				if (!(Get-WmiObject -class Win32_OperatingSystem -ComputerName $ComputerName -ErrorAction silentlycontinue)) { 
+				Write-Debug "Берем список программ из $Computer по шаблону `"$AppMatch`""  
+                if (!(Test-ComputerConnection $ComputerName)) {
 					Write-Error "Компьютер $Computer не отвечает"
 					Continue
 				}

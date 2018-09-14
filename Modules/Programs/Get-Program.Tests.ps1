@@ -6,6 +6,10 @@ remove-module AdminTools -ErrorAction SilentlyContinue; import-module AdminTools
 
 Describe "Get-Program" {
     Context "Локальные программы и программы на компьютерах в сети" {
+        Mock -ModuleName AdminTools.Programs Test-ComputerConnection { #param($ComputerName)
+            return $ComputerName -ine "fictiveComp"
+        }
+        
         Mock -ModuleName AdminTools.Programs Open-RegistryRemoteKey{ 
             #return [microsoft.win32.registrykey]::OpenRemoteBaseKey('LocalMachine', $Computer, $Arch)
             $OutputObj = "" | Select-Object View, ComputerName
@@ -118,6 +122,24 @@ Describe "Get-Program" {
                     "SystemComponent" { 0;  Break }
                     default { ""; Break }
                 }
+            } elseif ($Key.Name -ieq "comp3\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\appWithStandardDate") {
+                switch ($ValueName) {
+                    "DisplayName" { "appWithStandardDate"; Break }
+                    "DisplayVersion" { "3.0.0.1"; Break }
+                    "InstallDate" { "20180914"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
+            } elseif ($Key.Name -ieq "comp3\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\appWithOtherDate") {
+                switch ($ValueName) {
+                    "DisplayName" { "appWithOtherDate"; Break }
+                    "DisplayVersion" { "3.0.0.1"; Break }
+                    "InstallDate" { "8/6/2018"; Break }
+                    "ParentKeyName" { $null;  Break }
+                    "SystemComponent" { 0;  Break }
+                    default { ""; Break }
+                }
             } else {
                 return "asdf"
             }
@@ -138,6 +160,9 @@ Describe "Get-Program" {
             } 
             elseif ($Key.Name -ieq "comp2\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
                 return @("app5", "app6", "app7", "upd1", "upd2", "upd3")
+            } 
+            elseif ($Key.Name -ieq "comp3\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall") {
+                return @("appWithStandardDate", "appWithOtherDate")
             } 
             else {
                 return "asdf"
@@ -164,7 +189,7 @@ Describe "Get-Program" {
 		$result = Get-Program ".*"
 	
         It "Имена приложений" {
-		    $result.Name | Should Be "app1", "app2"   
+		    $result.Name | Should Be "app1", "app2"
         }
         It "Версии" {
 		    $result.Version | Should Be "1.1.1.1", "2.2.2.2"   
@@ -230,6 +255,13 @@ Describe "Get-Program" {
             $programs.Count | Should Be 5
 		    $syscomps.Name | Should Be "SystemComponent 1"
             $updates.Name | Should Be "update 1", "update 2", "update 3"
+        }
+        
+        
+        $result = Get-Program -ComputerName comp3 ".*"
+        It "Проверка дат" {
+            $result.Count | Should Be 2
+            $result.InstalledDate | Should Be (New-Object DateTime(2018, 9, 14)), (New-Object DateTime(2018, 8, 6))
         }
     }
 
